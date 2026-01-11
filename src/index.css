@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-background text-text font-sans antialiased;
+  /* Prevent bounce effect */
+  overscroll-behavior: none;
+  /* Mobile-first constraints can be applied here or in layout components */
+}
+
+/* Ensure full height for SPA */
+html, body, #root {
+  height: 100%;
+}
