@@ -1,13 +1,15 @@
 import { usePersistentStore } from '../hooks/usePersistentStore';
 import { ExerciseCard } from './ExerciseCard';
-import { useMemo } from 'react';
+import { useFilterEngine } from '../hooks/useFilterEngine';
+import { FilterBar } from './FilterBar';
 
 export function ExerciseMatrix() {
   const { state, loading } = usePersistentStore();
 
-  const exercises = useMemo(() => {
-    return Object.values(state.exercises).sort((a, b) => a.name.localeCompare(b.name));
-  }, [state.exercises]);
+  const { filteredExercises, filterState, setFilter, options } = useFilterEngine(
+    state.exercises,
+    state.logs
+  );
 
   // Mock data generator for visualization purposes (since we have no real logs yet)
   const getMockHistory = (id: number) => {
@@ -28,8 +30,14 @@ export function ExerciseMatrix() {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-text mb-6 tracking-tight">Library</h1>
 
+      <FilterBar
+        filterState={filterState}
+        setFilter={setFilter}
+        options={options}
+      />
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-fr">
-        {exercises.map(exercise => (
+        {filteredExercises.map(exercise => (
           <div key={exercise.id} className="h-full">
             <ExerciseCard
               exercise={exercise}
@@ -37,6 +45,12 @@ export function ExerciseMatrix() {
             />
           </div>
         ))}
+
+        {filteredExercises.length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted">
+            No exercises found matching criteria.
+          </div>
+        )}
       </div>
     </div>
   );
