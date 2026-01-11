@@ -1,5 +1,6 @@
 import type { ExerciseCatalog } from '../types/models';
 import { Sparkline } from './Sparkline';
+import { motion } from 'framer-motion';
 
 interface ExerciseCardProps {
   exercise: ExerciseCatalog;
@@ -10,15 +11,17 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, onClick }: ExerciseCardProps) {
   return (
-    <div
+    <motion.div
+      layout
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.2 }}
       onClick={onClick}
       className={`
         group relative flex flex-col justify-between p-4 h-full
         bg-surface/50 backdrop-blur-md
         border ${isCompletedToday ? 'border-primary/50 bg-primary/5' : 'border-white/5'}
         rounded-xl
-        transition-all duration-300
-        hover:bg-surface/70 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10
+        hover:bg-surface/70 hover:shadow-lg hover:shadow-primary/10
         cursor-pointer
       `}
     >
@@ -55,6 +58,6 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

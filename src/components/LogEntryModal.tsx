@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ExerciseCatalog, WorkoutLog, WorkoutSet } from '../types/models';
+import { SuccessCheckmark } from './SuccessCheckmark';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface LogEntryModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
   const [weight, setWeight] = useState<string>('');
   const [rpe, setRpe] = useState<string>('');
   const [rest, setRest] = useState<string>('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Reset form when exercise changes or modal opens
   useEffect(() => {
@@ -24,6 +27,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         setWeight('');
         setRpe('');
         setRest('');
+        setIsSuccess(false);
       };
       reset();
     }
@@ -33,10 +37,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
   const r = parseFloat(reps);
   const isValid = !isNaN(w) && w > 0 && !isNaN(r) && r > 0 && setsCount > 0;
 
-  if (!isOpen || !exercise) return null;
-
   const handleSubmit = async () => {
-    if (!isValid) return;
+    if (!isValid || !exercise) return;
 
     const set: WorkoutSet = {
       reps: parseFloat(reps),
@@ -56,22 +58,40 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
     };
 
     await onSave(log);
-    onClose();
+    setIsSuccess(true);
+    setTimeout(() => {
+      onClose();
+    }, 1500);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && exercise && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
+            onClick={onClose}
+          />
 
-      {/* Modal Content - Bottom Sheet */}
-      <div className="relative w-full max-w-lg bg-surface border-t border-white/10 rounded-t-2xl shadow-2xl p-6 animate-slide-up">
-        <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
+          {/* Modal Content - Bottom Sheet */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative w-full max-w-lg bg-surface border-t border-white/10 rounded-t-2xl shadow-2xl p-6 pointer-events-auto"
+          >
+            {isSuccess ? (
+              <SuccessCheckmark />
+            ) : (
+              <>
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
 
-        <h2 className="text-2xl font-bold text-text mb-1">{exercise.name}</h2>
+                <h2 className="text-2xl font-bold text-text mb-1">{exercise.name}</h2>
         <p className="text-muted text-sm mb-6 uppercase tracking-wider font-bold">Log Workout</p>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -151,7 +171,11 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         >
           Save Log
         </button>
-      </div>
-    </div>
+              </>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
