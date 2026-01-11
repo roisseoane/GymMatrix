@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DataService } from '../services/DataService';
 import type { AppState, ExerciseCatalog, WorkoutLog } from '../types/models';
+import { INITIAL_EXERCISES } from '../data/initialExercises';
 
 const INITIAL_STATE: AppState = {
   exercises: {},
@@ -32,6 +33,15 @@ export function usePersistentStore(): UsePersistentStoreResult {
         const loadedData = DataService.load();
         if (loadedData) {
           setState(loadedData);
+        } else {
+          // Initialize with seed data if storage is empty
+          const seedExercises: Record<number, ExerciseCatalog> = {};
+          INITIAL_EXERCISES.forEach(ex => {
+            seedExercises[ex.id] = ex;
+          });
+          const seedState = { ...INITIAL_STATE, exercises: seedExercises };
+          setState(seedState);
+          DataService.save(seedState);
         }
       } catch (err) {
         setError('Failed to load data.');

@@ -4,6 +4,7 @@ export interface ExerciseCatalog {
   name: string;
   muscleGroup: string;
   equipment: string;
+  tags: string[];
 }
 
 // Sub-entidad: Serie individual dentro de un log
