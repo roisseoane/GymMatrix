@@ -4,24 +4,34 @@ import { Sparkline } from './Sparkline';
 interface ExerciseCardProps {
   exercise: ExerciseCatalog;
   recentLogs?: number[]; // Array of recent max weights or volumes
+  isCompletedToday?: boolean;
+  onClick?: () => void;
 }
 
-export function ExerciseCard({ exercise, recentLogs = [] }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, onClick }: ExerciseCardProps) {
   return (
-    <div className="
-      group relative flex flex-col justify-between p-4 h-full
-      bg-surface/50 backdrop-blur-md
-      border border-white/5
-      rounded-xl
-      transition-all duration-300
-      hover:bg-surface/70 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10
-      cursor-pointer
-    ">
+    <div
+      onClick={onClick}
+      className={`
+        group relative flex flex-col justify-between p-4 h-full
+        bg-surface/50 backdrop-blur-md
+        border ${isCompletedToday ? 'border-primary/50 bg-primary/5' : 'border-white/5'}
+        rounded-xl
+        transition-all duration-300
+        hover:bg-surface/70 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10
+        cursor-pointer
+      `}
+    >
       <div>
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-semibold text-text tracking-tight leading-tight">
             {exercise.name}
           </h3>
+          {isCompletedToday && (
+            <span className="text-primary text-xs font-bold uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-full">
+              Done
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">

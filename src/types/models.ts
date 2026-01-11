@@ -12,6 +12,7 @@ export interface WorkoutSet {
   reps: number;
   weight: number;
   rpe?: number; // Rate of Perceived Exertion (1-10)
+  restTime?: number; // Rest time in seconds
 }
 
 // Dinámico: Registro de un ejercicio en una sesión

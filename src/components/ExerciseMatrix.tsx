@@ -1,22 +1,37 @@
+import { useState, useCallback } from 'react';
 import { usePersistentStore } from '../hooks/usePersistentStore';
 import { ExerciseCard } from './ExerciseCard';
 import { useFilterEngine } from '../hooks/useFilterEngine';
 import { FilterBar } from './FilterBar';
+import { LogEntryModal } from './LogEntryModal';
+import type { ExerciseCatalog } from '../types/models';
 
 export function ExerciseMatrix() {
-  const { state, loading } = usePersistentStore();
+  const { state, loading, addLog } = usePersistentStore();
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
 
   const { filteredExercises, filterState, setFilter, options } = useFilterEngine(
     state.exercises,
     state.logs
   );
 
-  // Mock data generator for visualization purposes (since we have no real logs yet)
-  const getMockHistory = (id: number) => {
-    // Generate deterministic random-ish data based on ID
-    const base = (id * 13) % 50 + 50;
-    return [base, base + 5, base + 2, base + 8, base + 10];
-  };
+  // Helper to extract log history for an exercise
+  const getExerciseHistory = useCallback((exerciseId: number) => {
+    return state.logs
+      .filter(log => log.exerciseId === exerciseId)
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(log => {
+         // Return max weight of the session
+         return Math.max(...log.sets.map(s => s.weight));
+      });
+  }, [state.logs]);
+
+  // Helper to check if exercise was done today
+  const isCompletedToday = useCallback((exerciseId: number) => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return state.logs.some(log => log.exerciseId === exerciseId && log.timestamp >= startOfDay);
+  }, [state.logs]);
 
   if (loading) {
     return (
@@ -27,7 +42,7 @@ export function ExerciseMatrix() {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 pb-24">
       <h1 className="text-3xl font-bold text-text mb-6 tracking-tight">Library</h1>
 
       <FilterBar
@@ -41,7 +56,9 @@ export function ExerciseMatrix() {
           <div key={exercise.id} className="h-full">
             <ExerciseCard
               exercise={exercise}
-              recentLogs={getMockHistory(exercise.id)}
+              recentLogs={getExerciseHistory(exercise.id)}
+              isCompletedToday={isCompletedToday(exercise.id)}
+              onClick={() => setSelectedExercise(exercise)}
             />
           </div>
         ))}
@@ -52,6 +69,13 @@ export function ExerciseMatrix() {
           </div>
         )}
       </div>
+
+      <LogEntryModal
+        isOpen={!!selectedExercise}
+        exercise={selectedExercise}
+        onClose={() => setSelectedExercise(null)}
+        onSave={addLog}
+      />
     </div>
   );
 }
