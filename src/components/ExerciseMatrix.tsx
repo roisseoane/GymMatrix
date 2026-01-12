@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { usePersistentStore } from '../hooks/usePersistentStore';
 import { useFilterEngine } from '../hooks/useFilterEngine';
+import { useSmartRouting } from '../hooks/useSmartRouting';
 import { FilterBar } from './FilterBar';
 import { Header } from './Header';
 import { LogEntryModal } from './LogEntryModal';
@@ -12,7 +13,8 @@ import { checkFatigue } from '../utils/fatigueMonitor';
 import type { WorkoutLog, WorkoutSet } from '../types/models';
 
 export function ExerciseMatrix() {
-  const { state, loading, addLog } = usePersistentStore();
+  const { state, loading, batchUpdate } = usePersistentStore();
+  const { getUpdatedMap, getSuggestion } = useSmartRouting(state);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
   const [fatigueAlert, setFatigueAlert] = useState<string | null>(null);
 
@@ -72,8 +74,67 @@ export function ExerciseMatrix() {
       setTimeout(() => setFatigueAlert(null), 4000);
     }
 
-    await addLog(newLog);
+    // Atomic update
+    await batchUpdate(prevState => {
+      // 1. Identify previous log for transition recording
+      const sortedLogs = [...prevState.logs].sort((a, b) => b.timestamp - a.timestamp);
+      const previousLog = sortedLogs.length > 0 ? sortedLogs[0] : null;
+
+      let newMap = prevState.transitionMap;
+      if (previousLog) {
+        // Record transition: Previous -> New
+        newMap = getUpdatedMap(prevState.transitionMap, previousLog.exerciseId, newLog.exerciseId);
+      }
+
+      // 2. Add Log
+      const newLogs = [...prevState.logs, newLog];
+
+      // 3. Proactive Suggestion (based on new state context)
+      // Note: getSuggestion checks historical logs. We just added one, but check requires 30+.
+      // We pass the potentially updated logs to getSuggestion if it took state, but getSuggestion takes "state".
+      // We construct a temporary state for the suggestion engine.
+      const tempState = { ...prevState, logs: newLogs, transitionMap: newMap };
+      const suggestion = getSuggestion(tempState, newLog.exerciseId);
+
+      return {
+        ...prevState,
+        logs: newLogs,
+        transitionMap: newMap,
+        activeNextSuggestion: suggestion
+      };
+    });
   };
+
+  // Enhanced save handler for modal
+  // This function performs the "double action" atomically
+  const handleModalSave = useCallback(async (log: WorkoutLog) => {
+    return batchUpdate(prevState => {
+      // 1. Identify previous log for transition recording
+      const sortedLogs = [...prevState.logs].sort((a, b) => b.timestamp - a.timestamp);
+      const previousLog = sortedLogs.length > 0 ? sortedLogs[0] : null;
+
+      let newMap = prevState.transitionMap;
+      if (previousLog) {
+        // Record transition: Previous -> New
+        newMap = getUpdatedMap(prevState.transitionMap, previousLog.exerciseId, log.exerciseId);
+      }
+
+      // 2. Add Log
+      const newLogs = [...prevState.logs, log];
+
+      // 3. Proactive Suggestion
+      // Construct temp state to include the just-added log for the suggestion engine logic
+      const tempState = { ...prevState, logs: newLogs, transitionMap: newMap };
+      const suggestion = getSuggestion(tempState, log.exerciseId);
+
+      return {
+        ...prevState,
+        logs: newLogs,
+        transitionMap: newMap,
+        activeNextSuggestion: suggestion
+      };
+    });
+  }, [batchUpdate, getUpdatedMap, getSuggestion]);
 
   if (loading) {
     return (
@@ -143,7 +204,7 @@ export function ExerciseMatrix() {
         isOpen={!!selectedExercise}
         exercise={selectedExercise}
         onClose={() => setSelectedExercise(null)}
-        onSave={addLog}
+        onSave={handleModalSave}
       />
     </div>
   );

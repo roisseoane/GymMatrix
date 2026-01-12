@@ -37,4 +37,5 @@ export interface AppState {
   exercises: Record<number, ExerciseCatalog>;
   logs: WorkoutLog[];
   transitionMap: TransitionMap;
+  activeNextSuggestion?: number | null;
 }

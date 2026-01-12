@@ -1,47 +1,32 @@
 import { useCallback } from 'react';
 import { SmartRoutingEngine } from '../services/SmartRoutingEngine';
-import type { AppState } from '../types/models';
+import type { AppState, TransitionMap } from '../types/models';
 
 /**
  * Hook to interface with the SmartRoutingEngine.
  * Provides methods to record transitions and get exercise suggestions.
  *
  * @param state The current application state.
- * @param saveData Function to persist the updated state.
  */
-export function useSmartRouting(
-  state: AppState,
-  saveData: (newState: AppState) => Promise<boolean>
-) {
-  const recordTransition = useCallback(
-    async (fromId: number, toId: number) => {
-      try {
-        const newMap = SmartRoutingEngine.recordTransition(
-          state.transitionMap,
-          fromId,
-          toId
-        );
+export function useSmartRouting(state: AppState) {
 
-        await saveData({
-          ...state,
-          transitionMap: newMap
-        });
-      } catch (error) {
-        console.error('Failed to record transition:', error);
-      }
+  // Pure helper to get new map
+  const getUpdatedMap = useCallback(
+    (currentMap: TransitionMap, fromId: number, toId: number) => {
+      return SmartRoutingEngine.recordTransition(currentMap, fromId, toId);
     },
-    [state, saveData]
+    []
   );
 
   const getSuggestion = useCallback(
-    (lastExerciseId: number) => {
-      return SmartRoutingEngine.getSuggestion(state, lastExerciseId);
+    (currentState: AppState, lastExerciseId: number) => {
+      return SmartRoutingEngine.getSuggestion(currentState, lastExerciseId);
     },
-    [state]
+    []
   );
 
   return {
-    recordTransition,
+    getUpdatedMap,
     getSuggestion
   };
 }

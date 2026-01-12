@@ -7,6 +7,7 @@ const INITIAL_STATE: AppState = {
   exercises: {},
   logs: [],
   transitionMap: {},
+  activeNextSuggestion: null,
 };
 
 interface UsePersistentStoreResult {
@@ -16,6 +17,7 @@ interface UsePersistentStoreResult {
   saveData: (newState: AppState) => Promise<boolean>;
   addExercise: (exercise: ExerciseCatalog) => Promise<boolean>;
   addLog: (log: WorkoutLog) => Promise<boolean>;
+  batchUpdate: (updater: (prevState: AppState) => AppState) => Promise<boolean>;
   clearData: () => void;
 }
 
@@ -74,26 +76,54 @@ export function usePersistentStore(): UsePersistentStoreResult {
     }
   }, []);
 
+  // Batch update helper to allow atomic updates based on latest state
+  const batchUpdate = useCallback(async (updater: (prevState: AppState) => AppState): Promise<boolean> => {
+    setError(null);
+    try {
+      // Use functional state update to ensure we have the latest state from React
+      let success = false;
+
+      // We need to use setState's callback to get the latest state safely,
+      // but we also need to persist it. Since DataService.save is sync (localStorage),
+      // we can do this.
+
+      setState((prev) => {
+        const newState = updater(prev);
+        try {
+            DataService.save(newState);
+            success = true;
+        } catch (err) {
+            console.error("Failed to save during batch update", err);
+            // In a real app we might want to revert state here or handle error better
+        }
+        return newState;
+      });
+
+      return true; // We assume optimistic success mostly
+    } catch (err) {
+       console.error(err);
+       return false;
+    }
+  }, []);
+
   // Helper to add an exercise
   const addExercise = useCallback(async (exercise: ExerciseCatalog) => {
-    const newState = {
-      ...state,
+    return batchUpdate(prev => ({
+      ...prev,
       exercises: {
-        ...state.exercises,
+        ...prev.exercises,
         [exercise.id]: exercise,
       },
-    };
-    return saveData(newState);
-  }, [state, saveData]);
+    }));
+  }, [batchUpdate]);
 
   // Helper to add a log
   const addLog = useCallback(async (log: WorkoutLog) => {
-    const newState = {
-      ...state,
-      logs: [...state.logs, log],
-    };
-    return saveData(newState);
-  }, [state, saveData]);
+    return batchUpdate(prev => ({
+      ...prev,
+      logs: [...prev.logs, log],
+    }));
+  }, [batchUpdate]);
 
   const clearData = useCallback(() => {
     DataService.clear();
@@ -107,6 +137,7 @@ export function usePersistentStore(): UsePersistentStoreResult {
     saveData,
     addExercise,
     addLog,
+    batchUpdate,
     clearData,
   };
 }
