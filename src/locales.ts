@@ -47,6 +47,22 @@ export const translations = {
     rir_1_2_more: '1-2 més',
     rir_3_plus: '3 o més',
 
+    // Swipe Feedback
+    swipe_easy: 'Fàcil',
+    swipe_hard: 'Difícil',
+    swipe_failure: 'Fallada',
+
+    // Tags
+    Compound: 'Compost',
+    Isolation: 'Aïllament',
+    Push: 'Empenta',
+    Pull: 'Tracció',
+    Strength: 'Força',
+    Accessory: 'Accessori',
+    Prehab: 'Prehab',
+    Stability: 'Estabilitat',
+    Rotation: 'Rotació',
+
     // Exercises
     'Bench Press': 'Press de Banca',
     'Squat': 'Esquat',
@@ -116,6 +132,22 @@ export const translations = {
     rir_1_2_more: '1-2 más',
     rir_3_plus: '3 o más',
 
+    // Swipe Feedback
+    swipe_easy: 'Fácil',
+    swipe_hard: 'Difícil',
+    swipe_failure: 'Fallo',
+
+    // Tags
+    Compound: 'Compuesto',
+    Isolation: 'Aislamiento',
+    Push: 'Empuje',
+    Pull: 'Tracción',
+    Strength: 'Fuerza',
+    Accessory: 'Accesorio',
+    Prehab: 'Prehab',
+    Stability: 'Estabilidad',
+    Rotation: 'Rotación',
+
     // Exercises
     'Bench Press': 'Press de Banca',
     'Squat': 'Sentadilla',
@@ -184,6 +216,22 @@ export const translations = {
     rir_near_failure: 'Near Failure',
     rir_1_2_more: '1-2 More',
     rir_3_plus: '3+ More',
+
+    // Swipe Feedback
+    swipe_easy: 'Easy',
+    swipe_hard: 'Hard',
+    swipe_failure: 'Failure',
+
+    // Tags
+    Compound: 'Compound',
+    Isolation: 'Isolation',
+    Push: 'Push',
+    Pull: 'Pull',
+    Strength: 'Strength',
+    Accessory: 'Accessory',
+    Prehab: 'Prehab',
+    Stability: 'Stability',
+    Rotation: 'Rotation',
 
     // Exercises
     'Bench Press': 'Bench Press',

@@ -44,7 +44,7 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
         <div className="flex flex-wrap gap-1.5 mb-4">
           {exercise.tags.slice(0, 3).map(tag => (
             <span key={tag} className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/5 text-muted border border-white/5">
-              {tag}
+              {t(tag)}
             </span>
           ))}
           {exercise.tags.length > 3 && (

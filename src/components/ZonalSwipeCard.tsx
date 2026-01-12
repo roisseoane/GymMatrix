@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDrag } from '@use-gesture/react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { ExerciseCard } from './ExerciseCard';
 import type { ExerciseCatalog } from '../types/models';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ZonalSwipeCardProps {
   exercise: ExerciseCatalog;
@@ -21,8 +22,10 @@ export function ZonalSwipeCard({
   onClick,
   onQuickLog
 }: ZonalSwipeCardProps) {
+  const { t } = useTranslation();
   const x = useMotionValue(0);
   const [swiping, setSwiping] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Background colors mapped to drag distance
   const bg = useTransform(x,
@@ -32,23 +35,29 @@ export function ZonalSwipeCard({
 
   const scale = useTransform(x, [0, 200], [1, 1.05]);
 
-  const bind = useDrag(({ active, movement: [mx] }) => {
+  const bind = useDrag(({ active, movement: [mx, my], cancel }) => {
+    // Conflict resolution: Cancel if initial Y movement > 10px
+    if (active && Math.abs(my) > 10) {
+      cancel();
+      return;
+    }
+
     setSwiping(active);
 
-    // Thresholds (assuming card width ~350px for mobile, let's use fixed pixels or percentages)
-    // 30% ~ 100px, 60% ~ 200px, 90% ~ 300px
     if (active) {
       x.set(mx);
     } else {
-      // Release logic
-      if (mx > 250) {
-        // Red Zone (90%+) -> RPE 10
+      const width = containerRef.current?.offsetWidth || 350;
+      // Release logic with percentage thresholds
+      // 70% ~ Red, 45% ~ Yellow, 20% ~ Green
+      if (mx > width * 0.7) {
+        // Red Zone -> RPE 10
         onQuickLog(10);
-      } else if (mx > 150) {
-        // Yellow Zone (60%+) -> RPE 8.5
+      } else if (mx > width * 0.45) {
+        // Yellow Zone -> RPE 8.5
         onQuickLog(8.5);
-      } else if (mx > 80) {
-        // Green Zone (30%+) -> RPE 7
+      } else if (mx > width * 0.2) {
+        // Green Zone -> RPE 7
         onQuickLog(7);
       }
 
@@ -63,14 +72,14 @@ export function ZonalSwipeCard({
   });
 
   return (
-    <div className="relative w-full h-full touch-none select-none rounded-xl overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full touch-none select-none rounded-xl overflow-hidden">
       {/* Background Layer (Revealed on Swipe) */}
       <motion.div
         style={{ backgroundColor: bg }}
         className="absolute inset-0 flex items-center justify-start pl-4 rounded-xl z-0"
       >
         <span className="text-white font-bold text-lg uppercase tracking-widest opacity-80">
-          {x.get() > 250 ? 'Failure' : x.get() > 150 ? 'Hard' : x.get() > 80 ? 'Easy' : ''}
+          {x.get() > 250 ? t('swipe_failure') : x.get() > 150 ? t('swipe_hard') : x.get() > 80 ? t('swipe_easy') : ''}
         </span>
       </motion.div>
 
