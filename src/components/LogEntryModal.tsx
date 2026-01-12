@@ -4,6 +4,7 @@ import { SuccessCheckmark } from './SuccessCheckmark';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
 import { RIR_OPTIONS } from '../data/constants';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface LogEntryModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface LogEntryModalProps {
 }
 
 export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryModalProps) {
+  const { t } = useTranslation();
   const [setsCount, setSetsCount] = useState<number>(3);
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
@@ -95,13 +97,13 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
               <>
                 <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
 
-                <h2 className="text-2xl font-bold text-text mb-1">{exercise.name}</h2>
-        <p className="text-muted text-sm mb-6 uppercase tracking-wider font-bold">Log Workout</p>
+                <h2 className="text-2xl font-bold text-text mb-1">{t(exercise.name)}</h2>
+        <p className="text-muted text-sm mb-6 uppercase tracking-wider font-bold">{t('log_workout')}</p>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Weight */}
           <div className="col-span-1">
-            <label className="block text-xs text-muted uppercase font-bold mb-1">Weight (kg)</label>
+            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('weight_kg')}</label>
             <input
               type="number"
               value={weight}
@@ -113,7 +115,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
 
           {/* Reps */}
           <div className="col-span-1">
-            <label className="block text-xs text-muted uppercase font-bold mb-1">Reps</label>
+            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('reps')}</label>
             <input
               type="number"
               value={reps}
@@ -125,7 +127,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         </div>
 
         <div className="mb-6">
-           <label className="block text-xs text-muted uppercase font-bold mb-1">Sets</label>
+           <label className="block text-xs text-muted uppercase font-bold mb-1">{t('sets')}</label>
            <div className="flex items-center justify-between bg-background border border-white/10 rounded-xl p-2">
              <button
                onClick={() => setSetsCount(Math.max(1, setsCount - 1))}
@@ -146,12 +148,12 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
           </div>
 
           <div>
-            <label className="block text-xs text-muted uppercase font-bold mb-1">Rest (sec)</label>
+            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('rest_sec')}</label>
             <input
               type="number"
               value={rest}
               onChange={e => setRest(e.target.value)}
-              placeholder="Optional"
+              placeholder={t('optional')}
               className="w-full bg-background border border-white/10 rounded-lg p-3 text-lg text-text focus:border-primary focus:outline-none placeholder-white/5"
             />
           </div>
@@ -167,7 +169,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
               : 'bg-white/5 text-white/20 cursor-not-allowed'}
           `}
         >
-          Save Log
+          {t('save_log')}
         </button>
               </>
             )}
