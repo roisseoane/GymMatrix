@@ -6,6 +6,7 @@ import { INITIAL_EXERCISES } from '../data/initialExercises';
 const INITIAL_STATE: AppState = {
   exercises: {},
   logs: [],
+  transitionMap: {},
 };
 
 interface UsePersistentStoreResult {
@@ -32,7 +33,8 @@ export function usePersistentStore(): UsePersistentStoreResult {
         // LocalStorage is sync, but we treat it as an effect to not block render
         const loadedData = DataService.load();
         if (loadedData) {
-          setState(loadedData);
+          // Merge with INITIAL_STATE to ensure new fields (like transitionMap) exist if loading old data
+          setState({ ...INITIAL_STATE, ...loadedData });
         } else {
           // Initialize with seed data if storage is empty
           const seedExercises: Record<number, ExerciseCatalog> = {};
