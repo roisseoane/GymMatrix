@@ -1,13 +1,15 @@
 import type { WorkoutLog } from '../types/models';
 
 /**
- * Calculates a load suggestion based on the last session's RPE.
+ * Calculates a load suggestion based on the last session's RPE and Fatigue status.
  * Logic:
- * - RPE <= 7: Increase weight by ~2.5% OR add 1 rep. (We defaults to weight increase for now).
- * - RPE >= 9: Maintain weight and reps.
- * - RPE 8: Maintain (Sweet spot).
+ * - If isFatigued: Reduce weight by 10% (CNS Deload).
+ * - Else (Standard):
+ *   - RPE <= 7: Increase weight by ~2.5% OR add 1 rep. (We defaults to weight increase for now).
+ *   - RPE >= 9: Maintain weight and reps.
+ *   - RPE 8: Maintain (Sweet spot).
  */
-export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number): string | null {
+export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number, isFatigued: boolean): string | null {
   // 1. Get logs for this exercise, sorted by date desc
   const exerciseLogs = logs
     .filter(l => l.exerciseId === exerciseId)
@@ -27,12 +29,19 @@ export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number): str
 
   const { weight, reps, rpe } = topSet;
 
+  // Priority check: Fatigue / CNS Deload
+  if (isFatigued) {
+    const deloadWeight = weight * 0.90;
+    const roundedDeload = Math.round(deloadWeight * 2) / 2;
+    return `${roundedDeload}kg x ${reps} (CNS Deload)`;
+  }
+
   // If no RPE recorded, default to maintain
   if (rpe === undefined || rpe === null) {
     return `${weight}kg x ${reps}`;
   }
 
-  // 3. Apply Heuristics
+  // 3. Apply Heuristics (Standard Progression)
   if (rpe <= 7) {
     // Increase load
     // 2.5% increase, rounded to nearest 1.25 (standard plate math) or just 1 decimal.
