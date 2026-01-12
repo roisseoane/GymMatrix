@@ -6,6 +6,7 @@ import { FilterBar } from './FilterBar';
 import { LogEntryModal } from './LogEntryModal';
 import type { ExerciseCatalog } from '../types/models';
 import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
+import { calculateSuggestion } from '../utils/predictiveLoad';
 
 export function ExerciseMatrix() {
   const { state, loading, addLog } = usePersistentStore();
@@ -69,6 +70,7 @@ export function ExerciseMatrix() {
                   exercise={exercise}
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
+                  suggestion={calculateSuggestion(state.logs, exercise.id)}
                   onClick={() => setSelectedExercise(exercise)}
                 />
               </motion.div>

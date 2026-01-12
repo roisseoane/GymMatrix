@@ -6,10 +6,11 @@ interface ExerciseCardProps {
   exercise: ExerciseCatalog;
   recentLogs?: number[]; // Array of recent max weights or volumes
   isCompletedToday?: boolean;
+  suggestion?: string | null;
   onClick?: () => void;
 }
 
-export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, onClick }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, suggestion, onClick }: ExerciseCardProps) {
   return (
     <motion.div
       layout
@@ -47,6 +48,13 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
             <span className="text-[10px] text-muted px-1">+{exercise.tags.length - 3}</span>
           )}
         </div>
+
+        {suggestion && (
+          <div className="absolute top-4 right-4 text-right">
+             <span className="block text-[10px] text-muted/50 uppercase font-mono tracking-widest">Suggested</span>
+             <span className="block text-xs text-primary/80 font-mono font-bold">{suggestion}</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-auto pt-2">
