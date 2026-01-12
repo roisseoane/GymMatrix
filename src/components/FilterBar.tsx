@@ -14,7 +14,7 @@ export function FilterBar({ filterState, setFilter, options }: FilterBarProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="sticky top-0 z-10 py-4 bg-background/80 backdrop-blur-md border-b border-white/5 mb-6">
+    <div className="py-2 border-b border-white/5 mb-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         {/* Search */}
         <input

@@ -85,13 +85,15 @@ export function ExerciseMatrix() {
 
   return (
     <div className="container mx-auto p-4 pb-24">
-      <Header />
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4">
+        <Header />
 
-      <FilterBar
-        filterState={filterState}
-        setFilter={setFilter}
-        options={options}
-      />
+        <FilterBar
+          filterState={filterState}
+          setFilter={setFilter}
+          options={options}
+        />
+      </div>
 
       {fatigueAlert && (
         <motion.div
