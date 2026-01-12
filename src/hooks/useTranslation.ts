@@ -1,24 +1,17 @@
-import { useState } from 'react';
+import { useContext } from 'react';
 import { translations } from '../locales';
-import type { Language } from '../locales';
-
-const STORAGE_KEY = 'app_language';
+import { LanguageContext } from '../context/LanguageContext';
 
 export type TranslationKey = keyof typeof translations.ca;
 
 export function useTranslation() {
-  const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'ca' || saved === 'es' || saved === 'en') {
-      return saved as Language;
-    }
-    return 'ca'; // Default
-  });
+  const context = useContext(LanguageContext);
 
-  const setLanguage = (lang: Language) => {
-    localStorage.setItem(STORAGE_KEY, lang);
-    setLanguageState(lang);
-  };
+  if (!context) {
+    throw new Error('useTranslation must be used within a LanguageProvider');
+  }
+
+  const { language, setLanguage } = context;
 
   const t = (key: string): string => {
     // We cast key to any because dynamic keys from exercise names might not match TranslationKey perfectly in strict typing scenarios

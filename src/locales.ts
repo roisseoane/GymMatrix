@@ -23,6 +23,7 @@ export const translations = {
     frequency: 'Freqüència',
     name: 'Nom',
     weight_kg: 'Pes (kg)',
+    library: 'Biblioteca',
 
     // Muscles
     Chest: 'Pectoral',
@@ -91,6 +92,7 @@ export const translations = {
     frequency: 'Frecuencia',
     name: 'Nombre',
     weight_kg: 'Peso (kg)',
+    library: 'Biblioteca',
 
     // Muscles
     Chest: 'Pectoral',
@@ -159,6 +161,7 @@ export const translations = {
     frequency: 'Frequency',
     name: 'Name',
     weight_kg: 'Weight (kg)',
+    library: 'Library',
 
     // Muscles
     Chest: 'Chest',

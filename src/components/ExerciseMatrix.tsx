@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { usePersistentStore } from '../hooks/usePersistentStore';
 import { useFilterEngine } from '../hooks/useFilterEngine';
 import { FilterBar } from './FilterBar';
+import { Header } from './Header';
 import { LogEntryModal } from './LogEntryModal';
 import type { ExerciseCatalog } from '../types/models';
 import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
@@ -84,7 +85,7 @@ export function ExerciseMatrix() {
 
   return (
     <div className="container mx-auto p-4 pb-24">
-      <h1 className="text-3xl font-bold text-text mb-6 tracking-tight">Library</h1>
+      <Header />
 
       <FilterBar
         filterState={filterState}
