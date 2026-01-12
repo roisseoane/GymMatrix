@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import type { ExerciseCatalog, WorkoutLog, WorkoutSet } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
 import { AnimatePresence, motion } from 'framer-motion';
+import { RIRSlider } from './RIRSlider';
+import { RIR_OPTIONS } from '../data/constants';
 
 interface LogEntryModalProps {
   isOpen: boolean;
@@ -14,9 +16,11 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
   const [setsCount, setSetsCount] = useState<number>(3);
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
-  const [rpe, setRpe] = useState<string>('');
+  const [rirValue, setRirValue] = useState<number>(3); // Default to '3+' (Relaxed)
   const [rest, setRest] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
 
   // Reset form when exercise changes or modal opens
   useEffect(() => {
@@ -25,7 +29,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         setSetsCount(3);
         setReps('');
         setWeight('');
-        setRpe('');
+        setRirValue(3);
         setRest('');
         setIsSuccess(false);
       };
@@ -43,7 +47,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
     const set: WorkoutSet = {
       reps: parseFloat(reps),
       weight: parseFloat(weight),
-      rpe: rpe ? parseFloat(rpe) : undefined,
+      rpe: currentRIR.rpe,
       restTime: rest ? parseFloat(rest) : undefined
     };
 
@@ -83,7 +87,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg bg-surface border-t border-white/10 rounded-t-2xl shadow-2xl p-6 pointer-events-auto"
+            className={`relative w-full max-w-lg bg-surface border-t border-white/10 rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-shadow duration-300 ${currentRIR.glow}`}
           >
             {isSuccess ? (
               <SuccessCheckmark />
@@ -136,25 +140,19 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         </div>
 
         {/* Optional Fields */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div>
-            <label className="block text-xs text-muted uppercase font-bold mb-1">RPE (1-10)</label>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={rpe}
-              onChange={e => setRpe(e.target.value)}
-              className="w-full bg-background border border-white/10 rounded-lg p-3 text-lg text-text focus:border-primary focus:outline-none"
-            />
+        <div className="grid grid-cols-1 gap-4 mb-8">
+          <div className="mb-2">
+            <RIRSlider value={rirValue} onChange={setRirValue} />
           </div>
+
           <div>
             <label className="block text-xs text-muted uppercase font-bold mb-1">Rest (sec)</label>
             <input
               type="number"
               value={rest}
               onChange={e => setRest(e.target.value)}
-              className="w-full bg-background border border-white/10 rounded-lg p-3 text-lg text-text focus:border-primary focus:outline-none"
+              placeholder="Optional"
+              className="w-full bg-background border border-white/10 rounded-lg p-3 text-lg text-text focus:border-primary focus:outline-none placeholder-white/5"
             />
           </div>
         </div>
