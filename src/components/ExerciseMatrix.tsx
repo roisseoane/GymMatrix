@@ -84,7 +84,12 @@ export function ExerciseMatrix() {
       let newMap = prevState.transitionMap;
       if (previousLog) {
         // Record transition: Previous -> New
-        newMap = getUpdatedMap(prevState.transitionMap, previousLog.exerciseId, newLog.exerciseId);
+        newMap = getUpdatedMap(
+          prevState.transitionMap,
+          previousLog.exerciseId,
+          newLog.exerciseId,
+          prevState.activeNextSuggestion
+        );
       }
 
       // 2. Add Log
@@ -117,7 +122,12 @@ export function ExerciseMatrix() {
       let newMap = prevState.transitionMap;
       if (previousLog) {
         // Record transition: Previous -> New
-        newMap = getUpdatedMap(prevState.transitionMap, previousLog.exerciseId, log.exerciseId);
+        newMap = getUpdatedMap(
+          prevState.transitionMap,
+          previousLog.exerciseId,
+          log.exerciseId,
+          prevState.activeNextSuggestion
+        );
       }
 
       // 2. Add Log

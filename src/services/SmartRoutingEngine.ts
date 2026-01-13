@@ -4,41 +4,72 @@ import type { TransitionMap, AppState } from '../types/models';
 export class SmartRoutingEngine {
   private static BASE_WEIGHT = 1;
   private static INCREMENT = 1;
+  private static REINFORCEMENT_FACTOR = 1.5;
+  private static PENALTY_FACTOR = 0.9;
   private static MIN_LOGS_FOR_SUGGESTION = 30;
 
   /**
-   * Updates the transition map with a new transition.
-   * Increments the weight for the from->to connection in the current time context.
+   * Updates the transition map based on behavioral feedback.
+   * - If the user followed the suggestion: Boosts the weight (Reinforcement).
+   * - If the user ignored the suggestion: Penalizes the suggestion and records the actual path.
    *
-   * @param currentMap The current TransitionMap from the state.
-   * @param fromId The ID of the exercise just completed (or previous).
-   * @param toId The ID of the exercise currently being started/logged.
-   * @returns A new deep-cloned TransitionMap with the updated weights.
+   * @param currentMap The current TransitionMap.
+   * @param fromId The ID of the previous exercise.
+   * @param actualToId The ID of the exercise actually selected by the user.
+   * @param suggestedToId The ID of the exercise that was suggested (if any).
+   * @returns A new deep-cloned TransitionMap.
+   */
+  static processFeedback(
+    currentMap: TransitionMap,
+    fromId: number,
+    actualToId: number,
+    suggestedToId?: number | null
+  ): TransitionMap {
+    const key = generateContextKey();
+    const newMap: TransitionMap = JSON.parse(JSON.stringify(currentMap));
+
+    // Ensure structure exists
+    if (!newMap[key]) newMap[key] = {};
+    if (!newMap[key][fromId]) newMap[key][fromId] = {};
+
+    const transitions = newMap[key][fromId];
+
+    // Case 1: User followed suggestion (Reinforcement)
+    if (suggestedToId && actualToId === suggestedToId) {
+      if (!transitions[actualToId]) {
+        transitions[actualToId] = this.BASE_WEIGHT * this.REINFORCEMENT_FACTOR;
+      } else {
+        transitions[actualToId] += (this.INCREMENT * this.REINFORCEMENT_FACTOR);
+      }
+    }
+    // Case 2: User ignored suggestion (Penalty + New Record)
+    else {
+      // Penalize the ignored suggestion if it exists
+      if (suggestedToId && transitions[suggestedToId]) {
+        transitions[suggestedToId] *= this.PENALTY_FACTOR;
+      }
+
+      // Record the actual transition (Standard)
+      if (!transitions[actualToId]) {
+        transitions[actualToId] = this.BASE_WEIGHT;
+      } else {
+        transitions[actualToId] += this.INCREMENT;
+      }
+    }
+
+    return newMap;
+  }
+
+  /**
+   * Updates the transition map with a new transition (Standard mode).
+   * @deprecated Use processFeedback instead for learning capabilities.
    */
   static recordTransition(
     currentMap: TransitionMap,
     fromId: number,
     toId: number
   ): TransitionMap {
-    const key = generateContextKey();
-
-    // Deep clone to avoid mutation of the original state object
-    const newMap: TransitionMap = JSON.parse(JSON.stringify(currentMap));
-
-    if (!newMap[key]) {
-      newMap[key] = {};
-    }
-    if (!newMap[key][fromId]) {
-      newMap[key][fromId] = {};
-    }
-
-    if (!newMap[key][fromId][toId]) {
-      newMap[key][fromId][toId] = this.BASE_WEIGHT;
-    } else {
-      newMap[key][fromId][toId] += this.INCREMENT;
-    }
-
-    return newMap;
+    return this.processFeedback(currentMap, fromId, toId, null);
   }
 
   /**

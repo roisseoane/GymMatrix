@@ -12,8 +12,8 @@ export function useSmartRouting(state: AppState) {
 
   // Pure helper to get new map
   const getUpdatedMap = useCallback(
-    (currentMap: TransitionMap, fromId: number, toId: number) => {
-      return SmartRoutingEngine.recordTransition(currentMap, fromId, toId);
+    (currentMap: TransitionMap, fromId: number, toId: number, suggestedId?: number | null) => {
+      return SmartRoutingEngine.processFeedback(currentMap, fromId, toId, suggestedId);
     },
     []
   );
