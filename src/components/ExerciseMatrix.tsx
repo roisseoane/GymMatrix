@@ -197,6 +197,14 @@ export function ExerciseMatrix() {
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
                   isSuggested={state.activeNextSuggestion ? state.activeNextSuggestion[0] === exercise.id : false}
+                  isLastLogWarmup={(() => {
+                      const logs = state.logs.filter(l => l.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
+                      if (logs.length === 0 || !logs[0].sets || logs[0].sets.length === 0) return false;
+                      // Check if the last set was a warmup
+                      const lastSet = logs[0].sets[logs[0].sets.length - 1];
+                      // Legacy check included via SetType or isWarmup flag
+                      return lastSet.isWarmup || lastSet.type === 'WARMUP';
+                  })()}
                   suggestion={calculateSuggestion(state.logs, exercise.id, checkFatigue(state.logs, exercise.id, now))}
                   onClick={() => setSelectedExercise(exercise)}
                   onQuickLog={(rpe) => handleQuickLog(exercise, rpe)}

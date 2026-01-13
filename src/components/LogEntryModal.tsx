@@ -167,10 +167,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
 
   const getVisualMode = () => {
     if (isWarmup) {
-      return "shadow-blue-500/50 border-blue-500/50";
+      return "shadow-blue-500/50 border-blue-500/50 bg-blue-500/5";
     }
     if (isDropSet || currentRIR.value === 0) {
-      return "shadow-red-500/50 border-red-500/50";
+      return "shadow-red-500/50 border-red-500/50 bg-red-500/5";
     }
     return `${currentRIR.glow} border-white/10`;
   };
