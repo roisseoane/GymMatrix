@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ExerciseCatalog, WorkoutLog, WorkoutSet } from '../types/models';
+import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
@@ -20,6 +20,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
   const [weight, setWeight] = useState<string>('');
   const [rirValue, setRirValue] = useState<number>(3); // Default to '3+' (Relaxed)
   const [rest, setRest] = useState<string>('');
+  const [setType, setSetType] = useState<SetType>(SetType.NORMAL);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
@@ -33,6 +34,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         setWeight('');
         setRirValue(3);
         setRest('');
+        setSetType(SetType.NORMAL);
         setIsSuccess(false);
       };
       reset();
@@ -50,7 +52,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
       reps: parseFloat(reps),
       weight: parseFloat(weight),
       rpe: currentRIR.rpe,
-      restTime: rest ? parseFloat(rest) : undefined
+      restTime: rest ? parseFloat(rest) : undefined,
+      type: setType
     };
 
     // Generate N identical sets for this log
@@ -145,6 +148,26 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         <div className="grid grid-cols-1 gap-4 mb-8">
           <div className="mb-2">
             <RIRSlider value={rirValue} onChange={setRirValue} />
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted uppercase font-bold mb-2">{t('set_type')}</label>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(SetType).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSetType(type)}
+                  className={`
+                    px-3 py-2 rounded-lg text-sm font-bold border transition-colors
+                    ${setType === type
+                      ? 'bg-primary border-primary text-white'
+                      : 'bg-surface border-white/10 text-muted hover:bg-white/5'}
+                  `}
+                >
+                  {t(type.toLowerCase())}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

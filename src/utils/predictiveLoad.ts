@@ -1,4 +1,4 @@
-import type { WorkoutLog } from '../types/models';
+import { type WorkoutLog, SetType } from '../types/models';
 
 /**
  * Calculates a load suggestion based on the last session's RPE and Fatigue status.
@@ -21,8 +21,16 @@ export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number, isFa
   if (!lastLog.sets || lastLog.sets.length === 0) return null;
 
   // 2. Find the "Top Set" (Highest Weight, then Highest Reps)
+  // We exclude WARMUP sets from progression calculation to avoid biasing strength predictions.
+  const validSets = lastLog.sets.filter(s => s.type !== SetType.WARMUP);
+
+  if (validSets.length === 0) {
+    // Fallback if only warmup sets exist (rare but possible)
+    return null;
+  }
+
   // We assume the user wants to progress their top set.
-  const topSet = [...lastLog.sets].sort((a, b) => {
+  const topSet = [...validSets].sort((a, b) => {
     if (a.weight !== b.weight) return b.weight - a.weight;
     return b.reps - a.reps;
   })[0];
