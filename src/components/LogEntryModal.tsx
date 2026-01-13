@@ -167,10 +167,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
 
   const getVisualMode = () => {
     if (isWarmup) {
-      return "shadow-blue-500/50 border-blue-500/50 bg-blue-500/5";
+      return "shadow-blue-500/50 border-blue-500/50 bg-blue-500/10";
     }
     if (isDropSet || currentRIR.value === 0) {
-      return "shadow-red-500/50 border-red-500/50 bg-red-500/5";
+      return "shadow-red-500/50 border-red-500/50 bg-red-500/20";
     }
     return `${currentRIR.glow} border-white/10`;
   };
@@ -304,7 +304,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
                         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-muted hover:text-white transition-all text-xs font-bold uppercase"
                     >
                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h12v4l-6 6 6 6v4H6v-4l6-6-6-6V2z" />
                         </svg>
                         <span>{t('rest_sec')}</span>
                     </button>
