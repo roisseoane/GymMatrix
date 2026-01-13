@@ -10,7 +10,7 @@ import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
 import { calculateSuggestion } from '../utils/predictiveLoad';
 import { ZonalSwipeCard } from './ZonalSwipeCard';
 import { checkFatigue } from '../utils/fatigueMonitor';
-import type { WorkoutLog, WorkoutSet } from '../types/models';
+import type { WorkoutLog, WorkoutSet, SessionState } from '../types/models';
 
 export function ExerciseMatrix() {
   const { state, loading, batchUpdate } = usePersistentStore();
@@ -143,6 +143,10 @@ export function ExerciseMatrix() {
     return processLogUpdate(log);
   }, [processLogUpdate]);
 
+  const handleSessionUpdate = useCallback((newSession: SessionState) => {
+    batchUpdate(prev => ({ ...prev, session: newSession }));
+  }, [batchUpdate]);
+
   if (loading) {
     return (
       <div className="p-8 text-center text-muted animate-pulse">
@@ -159,7 +163,11 @@ export function ExerciseMatrix() {
   return (
     <div className="container mx-auto p-4 pb-24">
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
-        <Header lastLogTimestamp={lastGlobalLogTimestamp} />
+        <Header
+            lastLogTimestamp={lastGlobalLogTimestamp}
+            session={state.session}
+            onSessionUpdate={handleSessionUpdate}
+        />
 
         <FilterBar
           filterState={filterState}
