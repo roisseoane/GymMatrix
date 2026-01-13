@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { SessionState } from '../types/models';
 
 interface GlobalTimerProps {
@@ -9,7 +9,7 @@ interface GlobalTimerProps {
 
 export function GlobalTimer({ session, onUpdate }: GlobalTimerProps) {
   const [displayTime, setDisplayTime] = useState(0);
-  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pressTimerRef = useRef<number | null>(null);
 
   // Auto-start session if not active
   useEffect(() => {
@@ -34,12 +34,12 @@ export function GlobalTimer({ session, onUpdate }: GlobalTimerProps) {
         // If paused, display time is fixed at the moment of pause
         // elapsed = (lastPauseStart - startTime) - totalPausedTime
         if (session.lastPauseStartTime) {
-             const activeDuration = session.lastPauseStartTime - session.startTime! - session.totalPausedTime;
+             const activeDuration = session.lastPauseStartTime - (session.startTime ?? Date.now()) - session.totalPausedTime;
              setDisplayTime(Math.max(0, activeDuration));
         }
       } else {
         // elapsed = (now - startTime) - totalPausedTime
-        const activeDuration = now - session.startTime - session.totalPausedTime;
+        const activeDuration = now - (session.startTime ?? Date.now()) - session.totalPausedTime;
         setDisplayTime(Math.max(0, activeDuration));
       }
     };
@@ -76,7 +76,7 @@ export function GlobalTimer({ session, onUpdate }: GlobalTimerProps) {
         // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(50);
         togglePause();
-    }, 800); // 800ms long press
+    }, 800) as unknown as number; // Force cast for browser compatibility
   };
 
   const handlePointerUp = () => {
@@ -124,7 +124,7 @@ export function GlobalTimer({ session, onUpdate }: GlobalTimerProps) {
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
-            onClick={(e) => {
+            onClick={() => {
                 // Prevent click if we want strict long press, but user said "toque largo o un icono"
                 // Let's add an explicit small icon for click inside
             }}
