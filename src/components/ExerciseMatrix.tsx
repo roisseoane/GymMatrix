@@ -36,7 +36,12 @@ export function ExerciseMatrix() {
       .map(log => {
          // Return max weight of the session
          // Handle subSets structure: assume subSets[0] is primary for graph unless advanced logic needed
-         return Math.max(...log.sets.map(s => s.subSets && s.subSets.length > 0 ? s.subSets[0].weight : 0));
+         return Math.max(...log.sets.map(s => {
+             if (s.subSets && s.subSets.length > 0) return s.subSets[0].weight;
+             // Fallback for legacy data
+             const legacySet = s as unknown as { weight: number };
+             return legacySet.weight || 0;
+         }));
       });
   }, [state.logs]);
 
@@ -96,16 +101,23 @@ export function ExerciseMatrix() {
     if (exerciseLogs.length === 0) return; // Cannot quick log without history
 
     const lastLog = exerciseLogs[0];
-    const newSets: WorkoutSet[] = lastLog.sets.map(s => ({
-      ...s,
-      // Update RPE for the first subset or all?
-      // For quick log (swipe), we generally update the "feeling" of the set.
-      // If it's a dropset, does the RPE apply to the whole thing? usually last rep.
-      // Let's update all subSets rpe for simplicity or just the last one?
-      // User says "Define interface so that if isDropSet is false, only first element is processed".
-      // For simplicity, update all subsets RPE.
-      subSets: s.subSets.map(sub => ({ ...sub, rpe }))
-    }));
+    const newSets: WorkoutSet[] = lastLog.sets.map(s => {
+      // Legacy handling
+      let currentSubSets = s.subSets;
+      if (!currentSubSets || currentSubSets.length === 0) {
+          const oldSet = s as unknown as { weight: number; reps: number; rpe: number };
+          currentSubSets = [{
+              weight: oldSet.weight,
+              reps: oldSet.reps,
+              rpe: oldSet.rpe
+          }];
+      }
+
+      return {
+        ...s,
+        subSets: currentSubSets.map(sub => ({ ...sub, rpe }))
+      };
+    });
 
     const timestamp = new Date().getTime();
     const newLog: WorkoutLog = {
