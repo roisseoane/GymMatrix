@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType } from '../types/models';
+import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType, type SubSet } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
 import { RIR_OPTIONS } from '../data/constants';
 import { useTranslation } from '../hooks/useTranslation';
@@ -17,12 +17,15 @@ interface LogEntryModalProps {
 export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: LogEntryModalProps) {
   const { t } = useTranslation();
   const [setsCount, setSetsCount] = useState<number>(3);
-  const [reps, setReps] = useState<string>('');
-  const [weight, setWeight] = useState<string>('');
+  const [rows, setRows] = useState<Array<{ weight: string, reps: string }>>([{ weight: '', reps: '' }]);
   const [rirValue, setRirValue] = useState<number>(3); // Default to '3+' (Relaxed)
   const [rest, setRest] = useState<string>('');
-  const [setType, setSetType] = useState<SetType>(SetType.NORMAL);
+
+  const [isWarmup, setIsWarmup] = useState(false);
+  const [isDropSet, setIsDropSet] = useState(false);
+
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isRestExpanded, setIsRestExpanded] = useState(false);
 
   const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
 
@@ -32,53 +35,103 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
       if (lastLog && lastLog.sets.length > 0) {
         // Carry-over logic from previous log
         const lastSet = lastLog.sets[lastLog.sets.length - 1];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSetsCount(1); // Default to adding 1 set when continuing
-        setReps(lastSet.reps.toString());
-        setWeight(lastSet.weight.toString());
+
+        // Migration/Compatibility logic
+        let initialRows = [{ weight: '', reps: '' }];
+        if (lastSet.subSets && lastSet.subSets.length > 0) {
+          initialRows = lastSet.subSets.map(s => ({
+            weight: s.weight.toString(),
+            reps: s.reps.toString()
+          }));
+        } else {
+          // Fallback for old data structure (safe casting using unknown to match previous logic without any)
+          const oldSet = lastSet as unknown as { weight: number; reps: number; rpe: number };
+          if (oldSet.weight !== undefined) {
+             initialRows = [{
+                weight: oldSet.weight.toString(),
+                reps: oldSet.reps.toString()
+             }];
+          }
+        }
+        setRows(initialRows);
 
         // Map RPE back to RIR slider value
-        // RIR_OPTIONS: 10->0, 9.5->1, 8.5->2, 7->3
-        const matchedRIR = RIR_OPTIONS.find(opt => opt.rpe === lastSet.rpe);
+        // Use the first subset's RPE or legacy RPE
+        const oldSet = lastSet as unknown as { rpe: number };
+        const legacyRpe = oldSet.rpe;
+        const firstRpe = lastSet.subSets?.[0]?.rpe ?? legacyRpe;
+        const matchedRIR = RIR_OPTIONS.find(opt => opt.rpe === firstRpe);
         setRirValue(matchedRIR ? matchedRIR.value : 3);
 
         setRest(lastSet.restTime ? lastSet.restTime.toString() : '');
-        setSetType(lastSet.type || SetType.NORMAL);
+
+        // Determine flags
+        const type = lastSet.type;
+        setIsWarmup(lastSet.isWarmup || type === SetType.WARMUP);
+        setIsDropSet(lastSet.isDropSet || type === SetType.DROPSET || type === SetType.FAILURE); // Consider failure as drop? No, separate concept but maybe useful context.
+        // Stick to explicit flags if available, fallback to type.
+
+        setIsRestExpanded(!!lastSet.restTime);
       } else {
         // Default reset
         setSetsCount(3);
-        setReps('');
-        setWeight('');
+        setRows([{ weight: '', reps: '' }]);
         setRirValue(3);
         setRest('');
-        setSetType(SetType.NORMAL);
+        setIsWarmup(false);
+        setIsDropSet(false);
+        setIsRestExpanded(false);
       }
       setIsSuccess(false);
     }
   }, [isOpen, exercise, lastLog]);
 
-  const w = parseFloat(weight);
-  const r = parseFloat(reps);
-  const isValid = !isNaN(w) && w > 0 && !isNaN(r) && r > 0 && setsCount > 0;
+  const effectiveRows = isDropSet ? rows : [rows[0]];
+  const isValid = effectiveRows.every(r => {
+      const w = parseFloat(r.weight);
+      const rep = parseFloat(r.reps);
+      return !isNaN(w) && w > 0 && !isNaN(rep) && rep > 0;
+  }) && setsCount > 0;
 
   const handleSubmit = async () => {
     if (!isValid || !exercise) return;
 
+    // Filter valid rows just in case, though validation prevents submit
+    const validRows = effectiveRows.filter(r => r.weight && r.reps);
+
+    const subSets: SubSet[] = validRows.map(r => ({
+        reps: parseFloat(r.reps),
+        weight: parseFloat(r.weight),
+        rpe: currentRIR.rpe
+    }));
+
+    // Determine type for backward compatibility / display
+    let type: SetType = SetType.NORMAL;
+    if (isWarmup) type = SetType.WARMUP;
+    else if (isDropSet) type = SetType.DROPSET;
+    // else if (currentRIR.value === 0) type = SetType.FAILURE; // Optional inference
+
     const set: WorkoutSet = {
-      reps: parseFloat(reps),
-      weight: parseFloat(weight),
-      rpe: currentRIR.rpe,
+      subSets: subSets,
+      isDropSet: isDropSet,
+      isWarmup: isWarmup,
       restTime: rest ? parseFloat(rest) : undefined,
-      type: setType
+      type: type
     };
 
-    // Generate N identical sets for this log
-    const sets: WorkoutSet[] = Array.from({ length: setsCount }, () => ({ ...set }));
+    // Deep copy for multiple sets
+    const setsDeep = Array.from({ length: setsCount }, () => ({
+        ...set,
+        subSets: set.subSets.map(s => ({ ...s }))
+    }));
 
     const log: WorkoutLog = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       exerciseId: exercise.id,
-      sets: sets
+      sets: setsDeep
     };
 
     await onSave(log);
@@ -86,6 +139,40 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
     setTimeout(() => {
       onClose();
     }, 1500);
+  };
+
+  const onDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 150 || info.velocity.y > 300) {
+      onClose();
+    }
+  };
+
+  const updateRow = (index: number, field: 'weight' | 'reps', value: string) => {
+    const newRows = [...rows];
+    newRows[index] = { ...newRows[index], [field]: value };
+    setRows(newRows);
+  };
+
+  const addRow = () => {
+    if (rows.length < 4) {
+      // Auto-fill new row with previous row's values (smart defaults)
+      const lastRow = rows[rows.length - 1];
+      // Usually drop set means weight goes down. Maybe suggest 80%?
+      // For now just copy or empty. Let's copy weight but expect changes.
+      // User says "dynamic rows", let's leave empty or previous.
+      // Copying allows faster adjustment.
+      setRows([...rows, { ...lastRow }]);
+    }
+  };
+
+  const getVisualMode = () => {
+    if (isWarmup) {
+      return "shadow-blue-500/50 border-blue-500/50 bg-blue-500/10";
+    }
+    if (isDropSet || currentRIR.value === 0) {
+      return "shadow-red-500/50 border-red-500/50 bg-red-500/20";
+    }
+    return `${currentRIR.glow} border-white/10`;
   };
 
   return (
@@ -103,104 +190,148 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
 
           {/* Modal Content - Bottom Sheet */}
           <motion.div
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={{ top: 0, bottom: 0.2 }}
+            onDragEnd={onDragEnd}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`relative w-full max-w-lg bg-surface border-t border-white/10 rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-shadow duration-300 ${currentRIR.glow}`}
+            className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
           >
             {isSuccess ? (
               <SuccessCheckmark />
             ) : (
               <>
-                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4" />
 
-                <h2 className="text-2xl font-bold text-text mb-1">{t(exercise.name)}</h2>
-        <p className="text-muted text-sm mb-6 uppercase tracking-wider font-bold">{t('log_workout')}</p>
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-text mb-0 leading-none">{t(exercise.name)}</h2>
+                        <p className="text-muted text-xs uppercase tracking-wider font-bold mt-1">{t('log_workout')}</p>
+                    </div>
+                    {/* Discrete Toggles */}
+                    <div className="flex gap-2">
+                         <button
+                           onClick={() => { setIsWarmup(!isWarmup); if(!isWarmup) setIsDropSet(false); }}
+                           className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isWarmup ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-white/5 border-transparent text-muted hover:bg-white/10'}`}
+                         >
+                            {t('warmup')}
+                         </button>
+                         <button
+                           onClick={() => { setIsDropSet(!isDropSet); if(!isDropSet) setIsWarmup(false); }}
+                           className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isDropSet ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-white/5 border-transparent text-muted hover:bg-white/10'}`}
+                         >
+                            {t('dropset')}
+                         </button>
+                    </div>
+                </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* Weight */}
-          <div className="col-span-1 flex flex-col">
-            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('weight_kg')}</label>
-            <input
-              type="number"
-              value={weight}
-              onChange={e => setWeight(e.target.value)}
-              placeholder="0"
-              className="w-full bg-background border border-white/10 rounded-xl p-4 text-3xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
-            />
-            {exercise && exercise.baseWeight !== undefined && exercise.baseWeight > 0 && parseFloat(weight) > exercise.baseWeight && (
-              <div className="mt-2 text-center">
-                 <span className="inline-block bg-white/5 rounded px-2 py-1 text-xs text-muted font-mono">
-                   +{((parseFloat(weight) - exercise.baseWeight) / 2).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg/side
-                 </span>
-              </div>
-            )}
+                <div className="flex flex-col gap-3 mb-6">
+                  {/* Dynamic Rows */}
+                  {(isDropSet ? rows : [rows[0]]).map((row, index) => (
+                      <div key={index} className="grid grid-cols-2 gap-4">
+                        {/* Weight */}
+                        <div className="relative">
+                          {index === 0 && <label className="block text-xs text-muted uppercase font-bold mb-1">{t('weight_kg')}</label>}
+                          <input
+                            type="number"
+                            value={row.weight}
+                            onChange={e => updateRow(index, 'weight', e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
+                          />
+                           {index === 0 && exercise && exercise.baseWeight !== undefined && exercise.baseWeight > 0 && parseFloat(row.weight) > exercise.baseWeight && (
+                            <div className="absolute top-1 right-2 pointer-events-none opacity-50">
+                               <span className="text-[10px] text-muted font-mono">
+                                 +{((parseFloat(row.weight) - exercise.baseWeight) / 2).toFixed(0)}/s
+                               </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reps */}
+                        <div>
+                           {index === 0 && <label className="block text-xs text-muted uppercase font-bold mb-1">{t('reps')}</label>}
+                          <input
+                            type="number"
+                            value={row.reps}
+                            onChange={e => updateRow(index, 'reps', e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
+                          />
+                        </div>
+                      </div>
+                  ))}
+
+                  {/* Add Row Button */}
+                  {isDropSet && rows.length < 4 && (
+                      <button
+                        onClick={addRow}
+                        className="flex items-center justify-center w-full py-2 rounded-xl border border-dashed border-white/20 text-muted hover:bg-white/5 hover:text-white transition-colors text-sm font-bold uppercase tracking-wide"
+                      >
+                          + Drop
+                      </button>
+                  )}
+                </div>
+
+        {/* Minimal Sets & RIR & Rest Cluster */}
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <div className="flex items-center gap-4">
+             {/* Sets Count (Compact) */}
+             <div className="flex items-center bg-background border border-white/10 rounded-xl p-1 shrink-0">
+                 <button onClick={() => setSetsCount(Math.max(1, setsCount - 1))} className="w-8 h-10 flex items-center justify-center hover:bg-white/5 rounded text-muted font-bold">-</button>
+                 <div className="flex flex-col items-center px-2 w-10">
+                    <span className="text-xl font-bold text-text leading-none">{setsCount}</span>
+                    <span className="text-[8px] text-muted uppercase font-bold">Sets</span>
+                 </div>
+                 <button onClick={() => setSetsCount(setsCount + 1)} className="w-8 h-10 flex items-center justify-center hover:bg-white/5 rounded text-muted font-bold">+</button>
+             </div>
+
+             {/* RIR Slider (Always Visible, Flexible width) */}
+             <div className="flex-1">
+                <RIRSlider value={rirValue} onChange={setRirValue} />
+             </div>
           </div>
 
-          {/* Reps */}
-          <div className="col-span-1">
-            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('reps')}</label>
-            <input
-              type="number"
-              value={reps}
-              onChange={e => setReps(e.target.value)}
-              placeholder="0"
-              className="w-full bg-background border border-white/10 rounded-xl p-4 text-3xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
-            />
-          </div>
-        </div>
-
-        <div className="mb-6">
-           <label className="block text-xs text-muted uppercase font-bold mb-1">{t('sets')}</label>
-           <div className="flex items-center justify-between bg-background border border-white/10 rounded-xl p-2">
-             <button
-               onClick={() => setSetsCount(Math.max(1, setsCount - 1))}
-               className="w-12 h-12 flex items-center justify-center bg-surface rounded-lg text-text hover:bg-white/5 text-xl font-bold"
-             >-</button>
-             <span className="text-2xl font-bold text-text">{setsCount}</span>
-             <button
-               onClick={() => setSetsCount(setsCount + 1)}
-               className="w-12 h-12 flex items-center justify-center bg-surface rounded-lg text-text hover:bg-white/5 text-xl font-bold"
-             >+</button>
-           </div>
-        </div>
-
-        {/* Optional Fields */}
-        <div className="grid grid-cols-1 gap-4 mb-8">
-          <div className="mb-2">
-            <RIRSlider value={rirValue} onChange={setRirValue} />
-          </div>
-
-          <div>
-            <label className="block text-xs text-muted uppercase font-bold mb-2">{t('set_type')}</label>
-            <div className="flex w-full bg-white/5 rounded-xl p-1 gap-1">
-              {Object.values(SetType).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setSetType(type)}
-                  className={`
-                    flex-1 py-2 rounded-lg text-xs font-bold transition-all
-                    ${setType === type
-                      ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/5'
-                      : 'text-muted hover:text-white hover:bg-white/5'}
-                  `}
-                >
-                  {t(type.toLowerCase())}
-                </button>
-              ))}
+          {/* Rest Time (Collapsible) */}
+          <div className="flex flex-col">
+            <div className="flex justify-end">
+                {!isRestExpanded && (
+                    <button
+                        onClick={() => setIsRestExpanded(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-muted hover:text-white transition-all text-xs font-bold uppercase"
+                    >
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h12v4l-6 6 6 6v4H6v-4l6-6-6-6V2z" />
+                        </svg>
+                        <span>{t('rest_sec')}</span>
+                    </button>
+                )}
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-muted uppercase font-bold mb-1">{t('rest_sec')}</label>
-            <input
-              type="number"
-              value={rest}
-              onChange={e => setRest(e.target.value)}
-              placeholder={t('optional')}
-              className="w-full bg-background border border-white/10 rounded-lg p-3 text-lg text-text focus:border-primary focus:outline-none placeholder-white/5"
-            />
+            <AnimatePresence>
+                {isRestExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                         <div className="flex items-center gap-2 bg-background border border-white/10 rounded-lg p-2">
+                             <span className="text-xs text-muted uppercase font-bold pl-2">{t('rest_sec')}</span>
+                            <input
+                                type="number"
+                                value={rest}
+                                onChange={e => setRest(e.target.value)}
+                                placeholder="90"
+                                className="flex-1 bg-transparent text-right text-lg text-text focus:outline-none placeholder-white/5 font-bold"
+                                autoFocus
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
           </div>
         </div>
 

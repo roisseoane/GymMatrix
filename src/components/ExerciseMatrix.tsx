@@ -10,7 +10,7 @@ import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
 import { calculateSuggestion } from '../utils/predictiveLoad';
 import { ZonalSwipeCard } from './ZonalSwipeCard';
 import { checkFatigue } from '../utils/fatigueMonitor';
-import type { WorkoutLog, WorkoutSet } from '../types/models';
+import type { WorkoutLog, WorkoutSet, SessionState } from '../types/models';
 
 export function ExerciseMatrix() {
   const { state, loading, batchUpdate } = usePersistentStore();
@@ -35,7 +35,13 @@ export function ExerciseMatrix() {
       .sort((a, b) => a.timestamp - b.timestamp)
       .map(log => {
          // Return max weight of the session
-         return Math.max(...log.sets.map(s => s.weight));
+         // Handle subSets structure: assume subSets[0] is primary for graph unless advanced logic needed
+         return Math.max(...log.sets.map(s => {
+             if (s.subSets && s.subSets.length > 0) return s.subSets[0].weight;
+             // Fallback for legacy data
+             const legacySet = s as unknown as { weight: number };
+             return legacySet.weight || 0;
+         }));
       });
   }, [state.logs]);
 
@@ -95,10 +101,23 @@ export function ExerciseMatrix() {
     if (exerciseLogs.length === 0) return; // Cannot quick log without history
 
     const lastLog = exerciseLogs[0];
-    const newSets: WorkoutSet[] = lastLog.sets.map(s => ({
-      ...s,
-      rpe // Update RPE
-    }));
+    const newSets: WorkoutSet[] = lastLog.sets.map(s => {
+      // Legacy handling
+      let currentSubSets = s.subSets;
+      if (!currentSubSets || currentSubSets.length === 0) {
+          const oldSet = s as unknown as { weight: number; reps: number; rpe: number };
+          currentSubSets = [{
+              weight: oldSet.weight,
+              reps: oldSet.reps,
+              rpe: oldSet.rpe
+          }];
+      }
+
+      return {
+        ...s,
+        subSets: currentSubSets.map(sub => ({ ...sub, rpe }))
+      };
+    });
 
     const timestamp = new Date().getTime();
     const newLog: WorkoutLog = {
@@ -124,6 +143,10 @@ export function ExerciseMatrix() {
     return processLogUpdate(log);
   }, [processLogUpdate]);
 
+  const handleSessionUpdate = useCallback((newSession: SessionState) => {
+    batchUpdate(prev => ({ ...prev, session: newSession }));
+  }, [batchUpdate]);
+
   if (loading) {
     return (
       <div className="p-8 text-center text-muted animate-pulse">
@@ -140,7 +163,11 @@ export function ExerciseMatrix() {
   return (
     <div className="container mx-auto p-4 pb-24">
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
-        <Header lastLogTimestamp={lastGlobalLogTimestamp} />
+        <Header
+            lastLogTimestamp={lastGlobalLogTimestamp}
+            session={state.session}
+            onSessionUpdate={handleSessionUpdate}
+        />
 
         <FilterBar
           filterState={filterState}
@@ -178,6 +205,14 @@ export function ExerciseMatrix() {
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
                   isSuggested={state.activeNextSuggestion ? state.activeNextSuggestion[0] === exercise.id : false}
+                  isLastLogWarmup={(() => {
+                      const logs = state.logs.filter(l => l.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
+                      if (logs.length === 0 || !logs[0].sets || logs[0].sets.length === 0) return false;
+                      // Check if the last set was a warmup
+                      const lastSet = logs[0].sets[logs[0].sets.length - 1];
+                      // Legacy check included via SetType or isWarmup flag
+                      return lastSet.isWarmup || lastSet.type === 'WARMUP';
+                  })()}
                   suggestion={calculateSuggestion(state.logs, exercise.id, checkFatigue(state.logs, exercise.id, now))}
                   onClick={() => setSelectedExercise(exercise)}
                   onQuickLog={(rpe) => handleQuickLog(exercise, rpe)}

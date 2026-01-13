@@ -22,15 +22,42 @@ export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number, isFa
 
   // 2. Find the "Top Set" (Highest Weight, then Highest Reps)
   // We exclude WARMUP sets from progression calculation to avoid biasing strength predictions.
-  const validSets = lastLog.sets.filter(s => s.type !== SetType.WARMUP);
+  // Using isWarmup flag or fallback to type.
+  const validSets = lastLog.sets.filter(s => {
+      if (s.isWarmup) return false;
+      if (s.type === SetType.WARMUP) return false;
+      return true;
+  });
 
   if (validSets.length === 0) {
     // Fallback if only warmup sets exist (rare but possible)
     return null;
   }
 
+  // Flatten sets into a comparable format for sorting.
+  // Using subSets[0] as the representative for the set, as per instruction "if isDropSet is false, only process the first element"
+  // Even if it is a drop set, the top weight is usually the first subset.
+  // Handles legacy data fallback.
+  const flatSets = validSets.map(s => {
+      // Safe access for legacy structure
+      if (!s.subSets || s.subSets.length === 0) {
+          const oldSet = s as unknown as { weight: number; reps: number; rpe?: number };
+          return {
+              weight: oldSet.weight,
+              reps: oldSet.reps,
+              rpe: oldSet.rpe
+          };
+      }
+      const first = s.subSets[0];
+      return {
+          weight: first.weight,
+          reps: first.reps,
+          rpe: first.rpe
+      };
+  });
+
   // We assume the user wants to progress their top set.
-  const topSet = [...validSets].sort((a, b) => {
+  const topSet = [...flatSets].sort((a, b) => {
     if (a.weight !== b.weight) return b.weight - a.weight;
     return b.reps - a.reps;
   })[0];

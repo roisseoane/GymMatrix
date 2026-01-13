@@ -17,13 +17,20 @@ export const SetType = {
 
 export type SetType = typeof SetType[keyof typeof SetType];
 
-// Sub-entidad: Serie individual dentro de un log
-export interface WorkoutSet {
-  reps: number;
+export interface SubSet {
   weight: number;
-  rpe?: number; // Rate of Perceived Exertion (1-10)
+  reps: number;
+  rpe?: number;
+}
+
+// Sub-entidad: Serie individual dentro de un log
+// Refactorizado para soportar Drop-sets y estados polimórficos
+export interface WorkoutSet {
+  subSets: SubSet[]; // Array de sub-series (drops)
+  isDropSet: boolean; // Si es falso, solo se procesa subSets[0]
+  isWarmup: boolean; // Si es verdadero, no alimenta al PredictiveLoadEngine
   restTime?: number; // Rest time in seconds
-  type?: SetType;
+  type?: SetType; // Kept for backward compatibility or display logic, though isWarmup/isDropSet cover most logic
 }
 
 // Dinámico: Registro de un ejercicio en una sesión
@@ -43,10 +50,18 @@ export interface TransitionMap {
   };
 }
 
+export interface SessionState {
+  startTime: number | null;
+  totalPausedTime: number; // in milliseconds
+  isPaused: boolean;
+  lastPauseStartTime: number | null;
+}
+
 // Estado global de la aplicación para persistencia
 export interface AppState {
   exercises: Record<number, ExerciseCatalog>;
   logs: WorkoutLog[];
   transitionMap: TransitionMap;
   activeNextSuggestion?: number[] | null;
+  session: SessionState;
 }

@@ -10,6 +10,7 @@ interface ZonalSwipeCardProps {
   recentLogs?: number[];
   isCompletedToday?: boolean;
   isSuggested?: boolean;
+  isLastLogWarmup?: boolean;
   suggestion?: string | null;
   onClick?: () => void;
   onQuickLog: (rpe: number) => void;
@@ -20,6 +21,7 @@ export function ZonalSwipeCard({
   recentLogs,
   isCompletedToday,
   isSuggested,
+  isLastLogWarmup,
   suggestion,
   onClick,
   onQuickLog
@@ -147,7 +149,7 @@ export function ZonalSwipeCard({
           repeat: Infinity,
           ease: "easeInOut"
         } : undefined}
-        className={`relative z-10 h-full bg-surface rounded-xl shadow-sm ${isSuggested ? 'border border-cyan-500/50' : ''}`}
+        className={`relative z-10 h-full bg-surface rounded-xl shadow-sm ${isSuggested ? 'border border-cyan-500/50' : ''} ${isLastLogWarmup ? 'bg-blue-500/5 border-blue-500/20' : ''}`}
         // Prevent click when swiping
         onClick={() => {
           if (!swiping && x.get() === 0) {
