@@ -136,10 +136,12 @@ export function GlobalTimer({ session, onUpdate }: GlobalTimerProps) {
                 className={`w-2 h-2 rounded-full ${session.isPaused ? 'bg-white/20' : 'bg-red-500'}`}
             />
 
-            {/* Time */}
-            <span className={`font-mono font-bold tracking-wider tabular-nums min-w-[3.5rem] text-center ${session.isPaused ? 'opacity-50' : ''}`}>
-                {formatTime(displayTime)}
-            </span>
+            {/* Time - Fixed Width Container for Stability */}
+            <div className="w-[4.5rem] flex justify-center">
+                <span className={`font-mono font-bold tracking-wider tabular-nums text-center ${session.isPaused ? 'opacity-50' : ''}`}>
+                    {formatTime(displayTime)}
+                </span>
+            </div>
 
             {/* Divider */}
             <div className="w-px h-4 bg-white/10 mx-1" />

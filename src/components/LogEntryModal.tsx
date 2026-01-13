@@ -29,6 +29,18 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
 
   const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
 
+  // Lock Body Scroll when Open
+  useEffect(() => {
+    if (isOpen) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+    return () => {
+        document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Reset or Pre-fill form when exercise changes or modal opens
   useEffect(() => {
     if (isOpen) {
@@ -142,7 +154,9 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   };
 
   const onDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (info.offset.y > 150 || info.velocity.y > 300) {
+    // Velocity check (High-Performance Gesture)
+    // If thrown downwards fast, close even if distance is small
+    if (info.velocity.y > 500 || info.offset.y > 100) {
       onClose();
     }
   };
@@ -179,7 +193,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
     <AnimatePresence>
       {isOpen && exercise && (
         <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
-          {/* Backdrop */}
+          {/* Backdrop - Event Insulation */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -191,8 +205,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
           {/* Modal Content - Bottom Sheet */}
           <motion.div
             drag="y"
-            dragConstraints={{ top: 0 }}
-            dragElastic={{ top: 0, bottom: 0.2 }}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.8 }}
             onDragEnd={onDragEnd}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -204,7 +218,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
               <SuccessCheckmark />
             ) : (
               <>
-                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4" />
+                {/* Drag Handle */}
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4 cursor-grab active:cursor-grabbing" />
 
                 <div className="flex justify-between items-center mb-6">
                     <div>
