@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType } from '../types/models';
+import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType, type SubSet } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
@@ -35,13 +35,22 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
         const lastSet = lastLog.sets[lastLog.sets.length - 1];
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSetsCount(1); // Default to adding 1 set when continuing
-        setReps(lastSet.reps.toString());
-        setWeight(lastSet.weight.toString());
 
-        // Map RPE back to RIR slider value
-        // RIR_OPTIONS: 10->0, 9.5->1, 8.5->2, 7->3
-        const matchedRIR = RIR_OPTIONS.find(opt => opt.rpe === lastSet.rpe);
-        setRirValue(matchedRIR ? matchedRIR.value : 3);
+        // Handle migration from old format if needed, though typescript should enforce new format if possible.
+        // Assuming lastSet conforms to new WorkoutSet interface after refactor.
+        // If the store persists old data, we might have runtime issues unless we migrate data.
+        // For now assuming compatible structure or fresh data.
+        // Note: The previous steps updated the interface, but existing JSON in localStorage might be old.
+        // Robustness check:
+        const firstSubSet = lastSet.subSets?.[0];
+
+        if (firstSubSet) {
+             setReps(firstSubSet.reps.toString());
+             setWeight(firstSubSet.weight.toString());
+             // Map RPE back to RIR slider value
+             const matchedRIR = RIR_OPTIONS.find(opt => opt.rpe === firstSubSet.rpe);
+             setRirValue(matchedRIR ? matchedRIR.value : 3);
+        }
 
         setRest(lastSet.restTime ? lastSet.restTime.toString() : '');
         setSetType(lastSet.type || SetType.NORMAL);
@@ -67,22 +76,31 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   const handleSubmit = async () => {
     if (!isValid || !exercise) return;
 
+    const subSet: SubSet = {
+        reps: parseFloat(reps),
+        weight: parseFloat(weight),
+        rpe: currentRIR.rpe
+    };
+
     const set: WorkoutSet = {
-      reps: parseFloat(reps),
-      weight: parseFloat(weight),
-      rpe: currentRIR.rpe,
+      subSets: [subSet],
+      isDropSet: false, // Default to false for single-entry modal
+      isWarmup: setType === SetType.WARMUP,
       restTime: rest ? parseFloat(rest) : undefined,
       type: setType
     };
 
-    // Generate N identical sets for this log
-    const sets: WorkoutSet[] = Array.from({ length: setsCount }, () => ({ ...set }));
+    // Better deep copy to avoid reference issues if logic mutates subsets later
+    const setsDeep = Array.from({ length: setsCount }, () => ({
+        ...set,
+        subSets: set.subSets.map(s => ({ ...s }))
+    }));
 
     const log: WorkoutLog = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       exerciseId: exercise.id,
-      sets: sets
+      sets: setsDeep
     };
 
     await onSave(log);
