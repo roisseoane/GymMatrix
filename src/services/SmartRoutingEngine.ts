@@ -1,0 +1,126 @@
+import { generateContextKey } from '../utils/transitionUtils';
+import type { TransitionMap, AppState } from '../types/models';
+
+export class SmartRoutingEngine {
+  private static BASE_WEIGHT = 1;
+  private static INCREMENT = 1;
+  private static DECAY_FACTOR = 0.95;
+  private static REINFORCEMENT_FACTOR = 1.5;
+  private static PENALTY_FACTOR = 0.9;
+  private static MIN_WEIGHT_THRESHOLD = 0.01;
+  private static MIN_LOGS_FOR_SUGGESTION = 30;
+
+  /**
+   * Updates the transition map based on behavioral feedback.
+   * Applies a Leaky Integrator (decay) to existing weights before adding reinforcement.
+   *
+   * @param currentMap The current TransitionMap.
+   * @param fromId The ID of the previous exercise.
+   * @param actualToId The ID of the exercise actually selected by the user.
+   * @param suggestedToId The ID of the exercise that was suggested (if any).
+   * @returns A new deep-cloned TransitionMap.
+   */
+  static processFeedback(
+    currentMap: TransitionMap,
+    fromId: number,
+    actualToId: number,
+    suggestedToId?: number | null
+  ): TransitionMap {
+    const key = generateContextKey();
+    const newMap: TransitionMap = JSON.parse(JSON.stringify(currentMap));
+
+    // Ensure structure exists
+    if (!newMap[key]) newMap[key] = {};
+    if (!newMap[key][fromId]) newMap[key][fromId] = {};
+
+    const transitions = newMap[key][fromId];
+
+    // 1. Apply Decay (Leaky Integrator) to all existing transitions in this context
+    // This ensures old patterns fade out over time
+    for (const targetId in transitions) {
+      transitions[targetId] *= this.DECAY_FACTOR;
+    }
+
+    // 2. Apply Reinforcement / Update Logic
+
+    // Case 1: User followed suggestion (Reinforcement)
+    if (suggestedToId && actualToId === suggestedToId) {
+      if (!transitions[actualToId]) {
+        transitions[actualToId] = this.BASE_WEIGHT * this.REINFORCEMENT_FACTOR;
+      } else {
+        transitions[actualToId] += (this.INCREMENT * this.REINFORCEMENT_FACTOR);
+      }
+    }
+    // Case 2: User ignored suggestion (Penalty + New Record)
+    else {
+      // Penalize the ignored suggestion if it exists
+      if (suggestedToId && transitions[suggestedToId]) {
+        transitions[suggestedToId] *= this.PENALTY_FACTOR;
+      }
+
+      // Record the actual transition (Standard)
+      if (!transitions[actualToId]) {
+        transitions[actualToId] = this.BASE_WEIGHT;
+      } else {
+        transitions[actualToId] += this.INCREMENT;
+      }
+    }
+
+    // 3. Pruning / Garbage Collection
+    // Remove weights below threshold to keep map clean and relevant
+    for (const targetId in transitions) {
+      if (transitions[targetId] < this.MIN_WEIGHT_THRESHOLD) {
+        delete transitions[targetId];
+      }
+    }
+
+    // Cleanup empty parent objects if needed
+    if (Object.keys(transitions).length === 0) {
+      delete newMap[key][fromId];
+    }
+
+    return newMap;
+  }
+
+  /**
+   * Updates the transition map with a new transition (Standard mode).
+   * @deprecated Use processFeedback instead for learning capabilities.
+   */
+  static recordTransition(
+    currentMap: TransitionMap,
+    fromId: number,
+    toId: number
+  ): TransitionMap {
+    return this.processFeedback(currentMap, fromId, toId, null);
+  }
+
+  /**
+   * Suggests the next exercise based on the last completed exercise and current context.
+   *
+   * @param state The global AppState containing logs and transitionMap.
+   * @param lastExerciseId The ID of the last completed exercise.
+   * @returns An array of the Top-3 suggested exercise IDs, sorted by weight descending.
+   */
+  static getSuggestion(
+    state: AppState,
+    lastExerciseId: number
+  ): number[] {
+    // Safety Guard: Require a minimum amount of historical data before making predictions
+    if (state.logs.length < this.MIN_LOGS_FOR_SUGGESTION) {
+      return [];
+    }
+
+    const key = generateContextKey();
+    const transitions = state.transitionMap[key]?.[lastExerciseId];
+
+    if (!transitions) {
+      return [];
+    }
+
+    // Convert to array, sort by weight desc, take top 3
+    return Object.entries(transitions)
+      .sort(([, weightA], [, weightB]) => weightB - weightA) // Descending
+      .slice(0, 3)
+      .map(([id]) => Number(id));
+  }
+}

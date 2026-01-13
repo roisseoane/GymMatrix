@@ -24,6 +24,7 @@ export const translations = {
     name: 'Nom',
     weight_kg: 'Pes (kg)',
     library: 'Biblioteca',
+    suggested_next: 'Següent recomanat',
 
     // Muscles
     Chest: 'Pectoral',
@@ -109,6 +110,7 @@ export const translations = {
     name: 'Nombre',
     weight_kg: 'Peso (kg)',
     library: 'Biblioteca',
+    suggested_next: 'Siguiente recomendado',
 
     // Muscles
     Chest: 'Pectoral',
@@ -194,6 +196,7 @@ export const translations = {
     name: 'Name',
     weight_kg: 'Weight (kg)',
     library: 'Library',
+    suggested_next: 'Next Recommended',
 
     // Muscles
     Chest: 'Chest',

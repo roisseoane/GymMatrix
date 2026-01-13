@@ -23,8 +23,19 @@ export interface WorkoutLog {
   sets: WorkoutSet[];
 }
 
+// Estructura de pesos de transición: contextKey -> fromExerciseId -> toExerciseId -> weight
+export interface TransitionMap {
+  [contextKey: string]: {
+    [fromExerciseId: number]: {
+      [toExerciseId: number]: number;
+    };
+  };
+}
+
 // Estado global de la aplicación para persistencia
 export interface AppState {
   exercises: Record<number, ExerciseCatalog>;
   logs: WorkoutLog[];
+  transitionMap: TransitionMap;
+  activeNextSuggestion?: number[] | null;
 }
