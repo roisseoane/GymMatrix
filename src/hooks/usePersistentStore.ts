@@ -7,7 +7,7 @@ const INITIAL_STATE: AppState = {
   exercises: {},
   logs: [],
   transitionMap: {},
-  activeNextSuggestion: null,
+  activeNextSuggestion: [],
 };
 
 interface UsePersistentStoreResult {

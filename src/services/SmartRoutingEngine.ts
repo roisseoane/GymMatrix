@@ -99,34 +99,28 @@ export class SmartRoutingEngine {
    *
    * @param state The global AppState containing logs and transitionMap.
    * @param lastExerciseId The ID of the last completed exercise.
-   * @returns The ID of the suggested exercise, or null if no suggestion is available or data is insufficient.
+   * @returns An array of the Top-3 suggested exercise IDs, sorted by weight descending.
    */
   static getSuggestion(
     state: AppState,
     lastExerciseId: number
-  ): number | null {
+  ): number[] {
     // Safety Guard: Require a minimum amount of historical data before making predictions
     if (state.logs.length < this.MIN_LOGS_FOR_SUGGESTION) {
-      return null;
+      return [];
     }
 
     const key = generateContextKey();
     const transitions = state.transitionMap[key]?.[lastExerciseId];
 
     if (!transitions) {
-      return null;
+      return [];
     }
 
-    let bestId: number | null = null;
-    let maxWeight = -1;
-
-    for (const [toIdStr, weight] of Object.entries(transitions)) {
-      if (weight > maxWeight) {
-        maxWeight = weight;
-        bestId = Number(toIdStr);
-      }
-    }
-
-    return bestId;
+    // Convert to array, sort by weight desc, take top 3
+    return Object.entries(transitions)
+      .sort(([, weightA], [, weightB]) => weightB - weightA) // Descending
+      .slice(0, 3)
+      .map(([id]) => Number(id));
   }
 }

@@ -6,7 +6,7 @@ import { calculateExerciseStats, calculateSmartScore } from '../utils/smartSort'
 export function useFilterEngine(
   exercises: Record<number, ExerciseCatalog>,
   logs: WorkoutLog[],
-  suggestedId?: number | null
+  suggestedIds?: number[] | null
 ) {
   const [filterState, setFilterState] = useState<FilterState>({
     search: '',
@@ -54,10 +54,14 @@ export function useFilterEngine(
 
     // Sort
     result.sort((a, b) => {
-      // Priority 0: Suggested Exercise
-      if (suggestedId) {
-        if (a.id === suggestedId) return -1;
-        if (b.id === suggestedId) return 1;
+      // Priority 0: Suggested Exercises (Top-3)
+      if (suggestedIds && suggestedIds.length > 0) {
+        const indexA = suggestedIds.indexOf(a.id);
+        const indexB = suggestedIds.indexOf(b.id);
+
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both suggested: maintain order
+        if (indexA !== -1) return -1; // A is suggested
+        if (indexB !== -1) return 1;  // B is suggested
       }
 
       const statsA = statsMap[a.id];
@@ -84,7 +88,7 @@ export function useFilterEngine(
     });
 
     return result;
-  }, [exercises, filterState, statsMap, suggestedId]);
+  }, [exercises, filterState, statsMap, suggestedIds]);
 
   const setFilter = (key: keyof FilterState, value: string) => {
     setFilterState(prev => ({ ...prev, [key]: value }));

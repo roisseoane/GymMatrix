@@ -95,11 +95,13 @@ export function ExerciseMatrix() {
       let newMap = prevState.transitionMap;
       if (previousLog) {
         // Record transition: Previous -> New
+        // Use the first (dominant) suggestion for feedback logic
+        const dominantSuggestion = prevState.activeNextSuggestion ? prevState.activeNextSuggestion[0] : null;
         newMap = getUpdatedMap(
           prevState.transitionMap,
           previousLog.exerciseId,
           newLog.exerciseId,
-          prevState.activeNextSuggestion
+          dominantSuggestion
         );
       }
 
@@ -170,7 +172,7 @@ export function ExerciseMatrix() {
                   exercise={exercise}
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
-                  isSuggested={exercise.id === state.activeNextSuggestion}
+                  isSuggested={state.activeNextSuggestion ? state.activeNextSuggestion[0] === exercise.id : false}
                   suggestion={calculateSuggestion(state.logs, exercise.id, checkFatigue(state.logs, exercise.id, now))}
                   onClick={() => setSelectedExercise(exercise)}
                   onQuickLog={(rpe) => handleQuickLog(exercise, rpe)}
