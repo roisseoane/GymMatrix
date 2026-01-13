@@ -132,10 +132,15 @@ export function ExerciseMatrix() {
     );
   }
 
+  // Calculate global last log timestamp for the rest timer
+  const lastGlobalLogTimestamp = state.logs.length > 0
+    ? Math.max(...state.logs.map(l => l.timestamp))
+    : null;
+
   return (
     <div className="container mx-auto p-4 pb-24">
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
-        <Header />
+        <Header lastLogTimestamp={lastGlobalLogTimestamp} />
 
         <FilterBar
           filterState={filterState}
@@ -192,6 +197,7 @@ export function ExerciseMatrix() {
       <LogEntryModal
         isOpen={!!selectedExercise}
         exercise={selectedExercise}
+        lastLog={selectedExercise ? state.logs.filter(l => l.exerciseId === selectedExercise.id).sort((a, b) => b.timestamp - a.timestamp)[0] : undefined}
         onClose={() => setSelectedExercise(null)}
         onSave={handleModalSave}
       />

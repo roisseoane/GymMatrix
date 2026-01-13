@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ExerciseCatalog, WorkoutLog, WorkoutSet } from '../types/models';
+import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
@@ -10,34 +10,51 @@ interface LogEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   exercise: ExerciseCatalog | null;
+  lastLog?: WorkoutLog;
   onSave: (log: WorkoutLog) => Promise<boolean>;
 }
 
-export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryModalProps) {
+export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: LogEntryModalProps) {
   const { t } = useTranslation();
   const [setsCount, setSetsCount] = useState<number>(3);
   const [reps, setReps] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
   const [rirValue, setRirValue] = useState<number>(3); // Default to '3+' (Relaxed)
   const [rest, setRest] = useState<string>('');
+  const [setType, setSetType] = useState<SetType>(SetType.NORMAL);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
 
-  // Reset form when exercise changes or modal opens
+  // Reset or Pre-fill form when exercise changes or modal opens
   useEffect(() => {
     if (isOpen) {
-      const reset = () => {
+      if (lastLog && lastLog.sets.length > 0) {
+        // Carry-over logic from previous log
+        const lastSet = lastLog.sets[lastLog.sets.length - 1];
+        setSetsCount(1); // Default to adding 1 set when continuing
+        setReps(lastSet.reps.toString());
+        setWeight(lastSet.weight.toString());
+
+        // Map RPE back to RIR slider value
+        // RIR_OPTIONS: 10->0, 9.5->1, 8.5->2, 7->3
+        const matchedRIR = RIR_OPTIONS.find(opt => opt.rpe === lastSet.rpe);
+        setRirValue(matchedRIR ? matchedRIR.value : 3);
+
+        setRest(lastSet.restTime ? lastSet.restTime.toString() : '');
+        setSetType(lastSet.type || SetType.NORMAL);
+      } else {
+        // Default reset
         setSetsCount(3);
         setReps('');
         setWeight('');
         setRirValue(3);
         setRest('');
-        setIsSuccess(false);
-      };
-      reset();
+        setSetType(SetType.NORMAL);
+      }
+      setIsSuccess(false);
     }
-  }, [isOpen, exercise]);
+  }, [isOpen, exercise, lastLog]);
 
   const w = parseFloat(weight);
   const r = parseFloat(reps);
@@ -50,7 +67,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
       reps: parseFloat(reps),
       weight: parseFloat(weight),
       rpe: currentRIR.rpe,
-      restTime: rest ? parseFloat(rest) : undefined
+      restTime: rest ? parseFloat(rest) : undefined,
+      type: setType
     };
 
     // Generate N identical sets for this log
@@ -102,7 +120,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Weight */}
-          <div className="col-span-1">
+          <div className="col-span-1 flex flex-col">
             <label className="block text-xs text-muted uppercase font-bold mb-1">{t('weight_kg')}</label>
             <input
               type="number"
@@ -111,6 +129,13 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
               placeholder="0"
               className="w-full bg-background border border-white/10 rounded-xl p-4 text-3xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
             />
+            {exercise && exercise.baseWeight !== undefined && exercise.baseWeight > 0 && parseFloat(weight) > exercise.baseWeight && (
+              <div className="mt-2 text-center">
+                 <span className="inline-block bg-white/5 rounded px-2 py-1 text-xs text-muted font-mono">
+                   +{((parseFloat(weight) - exercise.baseWeight) / 2).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg/side
+                 </span>
+              </div>
+            )}
           </div>
 
           {/* Reps */}
@@ -145,6 +170,26 @@ export function LogEntryModal({ isOpen, onClose, exercise, onSave }: LogEntryMod
         <div className="grid grid-cols-1 gap-4 mb-8">
           <div className="mb-2">
             <RIRSlider value={rirValue} onChange={setRirValue} />
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted uppercase font-bold mb-2">{t('set_type')}</label>
+            <div className="flex w-full bg-white/5 rounded-xl p-1 gap-1">
+              {Object.values(SetType).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSetType(type)}
+                  className={`
+                    flex-1 py-2 rounded-lg text-xs font-bold transition-all
+                    ${setType === type
+                      ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/5'
+                      : 'text-muted hover:text-white hover:bg-white/5'}
+                  `}
+                >
+                  {t(type.toLowerCase())}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

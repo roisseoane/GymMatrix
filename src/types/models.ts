@@ -5,7 +5,17 @@ export interface ExerciseCatalog {
   muscleGroup: string;
   equipment: string;
   tags: string[];
+  baseWeight?: number; // Weight of the equipment itself (e.g., bar weight)
 }
+
+export const SetType = {
+  WARMUP: 'WARMUP',
+  NORMAL: 'NORMAL',
+  DROPSET: 'DROPSET',
+  FAILURE: 'FAILURE'
+} as const;
+
+export type SetType = typeof SetType[keyof typeof SetType];
 
 // Sub-entidad: Serie individual dentro de un log
 export interface WorkoutSet {
@@ -13,6 +23,7 @@ export interface WorkoutSet {
   weight: number;
   rpe?: number; // Rate of Perceived Exertion (1-10)
   restTime?: number; // Rest time in seconds
+  type?: SetType;
 }
 
 // Dinámico: Registro de un ejercicio en una sesión
