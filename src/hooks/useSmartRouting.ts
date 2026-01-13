@@ -8,7 +8,7 @@ import type { AppState, TransitionMap } from '../types/models';
  *
  * @param state The current application state.
  */
-export function useSmartRouting(state: AppState) {
+export function useSmartRouting() {
 
   // Pure helper to get new map
   const getUpdatedMap = useCallback(

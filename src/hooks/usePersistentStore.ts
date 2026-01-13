@@ -81,7 +81,6 @@ export function usePersistentStore(): UsePersistentStoreResult {
     setError(null);
     try {
       // Use functional state update to ensure we have the latest state from React
-      let success = false;
 
       // We need to use setState's callback to get the latest state safely,
       // but we also need to persist it. Since DataService.save is sync (localStorage),
@@ -91,7 +90,6 @@ export function usePersistentStore(): UsePersistentStoreResult {
         const newState = updater(prev);
         try {
             DataService.save(newState);
-            success = true;
         } catch (err) {
             console.error("Failed to save during batch update", err);
             // In a real app we might want to revert state here or handle error better

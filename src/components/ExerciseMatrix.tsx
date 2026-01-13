@@ -14,7 +14,7 @@ import type { WorkoutLog, WorkoutSet } from '../types/models';
 
 export function ExerciseMatrix() {
   const { state, loading, batchUpdate } = usePersistentStore();
-  const { getUpdatedMap, getSuggestion } = useSmartRouting(state);
+  const { getUpdatedMap, getSuggestion } = useSmartRouting();
   const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
   const [fatigueAlert, setFatigueAlert] = useState<string | null>(null);
 
@@ -45,44 +45,6 @@ export function ExerciseMatrix() {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     return state.logs.some(log => log.exerciseId === exerciseId && log.timestamp >= startOfDay);
   }, [state.logs]);
-
-  const handleQuickLog = async (exercise: ExerciseCatalog, rpe: number) => {
-    // Clone last log logic
-    const exerciseLogs = state.logs
-      .filter(l => l.exerciseId === exercise.id)
-      .sort((a, b) => b.timestamp - a.timestamp);
-
-    if (exerciseLogs.length === 0) return; // Cannot quick log without history
-
-    const lastLog = exerciseLogs[0];
-    const newSets: WorkoutSet[] = lastLog.sets.map(s => ({
-      ...s,
-      rpe // Update RPE
-    }));
-
-    const timestamp = new Date().getTime();
-    const newLog: WorkoutLog = {
-      id: crypto.randomUUID(),
-      timestamp: timestamp,
-      exerciseId: exercise.id,
-      sets: newSets
-    };
-
-    // Check Fatigue
-    const isFatigued = checkFatigue(state.logs, exercise.id, newLog.timestamp);
-    if (isFatigued) {
-      setFatigueAlert(`CNS Alert: High latency detected for ${exercise.name}. Suggesting deload.`);
-      setTimeout(() => setFatigueAlert(null), 4000);
-    }
-
-    return processLogUpdate(newLog);
-  };
-
-  // Enhanced save handler for modal
-  // This function performs the "double action" atomically
-  const handleModalSave = useCallback(async (log: WorkoutLog) => {
-    return processLogUpdate(log);
-  }, [batchUpdate, getUpdatedMap, getSuggestion]);
 
   // Shared logic for processing a new log (Quick Log or Modal Save)
   const processLogUpdate = useCallback(async (newLog: WorkoutLog) => {
@@ -123,6 +85,44 @@ export function ExerciseMatrix() {
       };
     });
   }, [batchUpdate, getUpdatedMap, getSuggestion]);
+
+  const handleQuickLog = async (exercise: ExerciseCatalog, rpe: number) => {
+    // Clone last log logic
+    const exerciseLogs = state.logs
+      .filter(l => l.exerciseId === exercise.id)
+      .sort((a, b) => b.timestamp - a.timestamp);
+
+    if (exerciseLogs.length === 0) return; // Cannot quick log without history
+
+    const lastLog = exerciseLogs[0];
+    const newSets: WorkoutSet[] = lastLog.sets.map(s => ({
+      ...s,
+      rpe // Update RPE
+    }));
+
+    const timestamp = new Date().getTime();
+    const newLog: WorkoutLog = {
+      id: crypto.randomUUID(),
+      timestamp: timestamp,
+      exerciseId: exercise.id,
+      sets: newSets
+    };
+
+    // Check Fatigue
+    const isFatigued = checkFatigue(state.logs, exercise.id, newLog.timestamp);
+    if (isFatigued) {
+      setFatigueAlert(`CNS Alert: High latency detected for ${exercise.name}. Suggesting deload.`);
+      setTimeout(() => setFatigueAlert(null), 4000);
+    }
+
+    return processLogUpdate(newLog);
+  };
+
+  // Enhanced save handler for modal
+  // This function performs the "double action" atomically
+  const handleModalSave = useCallback(async (log: WorkoutLog) => {
+    return processLogUpdate(log);
+  }, [processLogUpdate]);
 
   if (loading) {
     return (
