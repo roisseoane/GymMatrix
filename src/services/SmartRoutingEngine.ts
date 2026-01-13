@@ -4,14 +4,14 @@ import type { TransitionMap, AppState } from '../types/models';
 export class SmartRoutingEngine {
   private static BASE_WEIGHT = 1;
   private static INCREMENT = 1;
+  private static DECAY_FACTOR = 0.95;
   private static REINFORCEMENT_FACTOR = 1.5;
   private static PENALTY_FACTOR = 0.9;
   private static MIN_LOGS_FOR_SUGGESTION = 30;
 
   /**
    * Updates the transition map based on behavioral feedback.
-   * - If the user followed the suggestion: Boosts the weight (Reinforcement).
-   * - If the user ignored the suggestion: Penalizes the suggestion and records the actual path.
+   * Applies a Leaky Integrator (decay) to existing weights before adding reinforcement.
    *
    * @param currentMap The current TransitionMap.
    * @param fromId The ID of the previous exercise.
@@ -33,6 +33,14 @@ export class SmartRoutingEngine {
     if (!newMap[key][fromId]) newMap[key][fromId] = {};
 
     const transitions = newMap[key][fromId];
+
+    // 1. Apply Decay (Leaky Integrator) to all existing transitions in this context
+    // This ensures old patterns fade out over time
+    for (const targetId in transitions) {
+      transitions[targetId] *= this.DECAY_FACTOR;
+    }
+
+    // 2. Apply Reinforcement / Update Logic
 
     // Case 1: User followed suggestion (Reinforcement)
     if (suggestedToId && actualToId === suggestedToId) {
