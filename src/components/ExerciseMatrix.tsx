@@ -192,6 +192,7 @@ export function ExerciseMatrix() {
       <LogEntryModal
         isOpen={!!selectedExercise}
         exercise={selectedExercise}
+        lastLog={selectedExercise ? state.logs.filter(l => l.exerciseId === selectedExercise.id).sort((a, b) => b.timestamp - a.timestamp)[0] : undefined}
         onClose={() => setSelectedExercise(null)}
         onSave={handleModalSave}
       />
