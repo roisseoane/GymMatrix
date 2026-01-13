@@ -9,6 +9,7 @@ interface ZonalSwipeCardProps {
   exercise: ExerciseCatalog;
   recentLogs?: number[];
   isCompletedToday?: boolean;
+  isSuggested?: boolean;
   suggestion?: string | null;
   onClick?: () => void;
   onQuickLog: (rpe: number) => void;
@@ -18,6 +19,7 @@ export function ZonalSwipeCard({
   exercise,
   recentLogs,
   isCompletedToday,
+  isSuggested,
   suggestion,
   onClick,
   onQuickLog
@@ -130,9 +132,22 @@ export function ZonalSwipeCard({
 
       {/* Foreground Card */}
       <motion.div
+        layout={isSuggested ? true : undefined}
         {...bind() as unknown as import('framer-motion').MotionProps}
         style={{ x, scale }}
-        className="relative z-10 h-full bg-surface rounded-xl shadow-sm"
+        animate={isSuggested ? {
+          boxShadow: [
+            "0 0 0 1px rgba(6,182,212,0.3)",
+            "0 0 0 3px rgba(6,182,212,0.6)",
+            "0 0 0 1px rgba(6,182,212,0.3)"
+          ]
+        } : {}}
+        transition={isSuggested ? {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        } : undefined}
+        className={`relative z-10 h-full bg-surface rounded-xl shadow-sm ${isSuggested ? 'border border-cyan-500/50' : ''}`}
         // Prevent click when swiping
         onClick={() => {
           if (!swiping && x.get() === 0) {
@@ -148,6 +163,12 @@ export function ZonalSwipeCard({
           // We handle click in the wrapper
           onClick={undefined}
         />
+      {/* Suggested Badge */}
+        {isSuggested && (
+          <div className="absolute top-2 right-2 bg-cyan-500/20 text-cyan-400 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+            {t('suggested_next')}
+          </div>
+        )}
       </motion.div>
     </div>
   );

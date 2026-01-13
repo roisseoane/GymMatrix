@@ -24,7 +24,8 @@ export function ExerciseMatrix() {
 
   const { filteredExercises, filterState, setFilter, options } = useFilterEngine(
     state.exercises,
-    state.logs
+    state.logs,
+    state.activeNextSuggestion
   );
 
   // Helper to extract log history for an exercise
@@ -184,6 +185,7 @@ export function ExerciseMatrix() {
                   exercise={exercise}
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
+                  isSuggested={exercise.id === state.activeNextSuggestion}
                   suggestion={calculateSuggestion(state.logs, exercise.id, checkFatigue(state.logs, exercise.id, now))}
                   onClick={() => setSelectedExercise(exercise)}
                   onQuickLog={(rpe) => handleQuickLog(exercise, rpe)}

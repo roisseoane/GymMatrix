@@ -3,7 +3,11 @@ import type { ExerciseCatalog, WorkoutLog } from '../types/models';
 import type { FilterState } from '../types/filters';
 import { calculateExerciseStats, calculateSmartScore } from '../utils/smartSort';
 
-export function useFilterEngine(exercises: Record<number, ExerciseCatalog>, logs: WorkoutLog[]) {
+export function useFilterEngine(
+  exercises: Record<number, ExerciseCatalog>,
+  logs: WorkoutLog[],
+  suggestedId?: number | null
+) {
   const [filterState, setFilterState] = useState<FilterState>({
     search: '',
     muscleGroup: 'All',
@@ -50,6 +54,12 @@ export function useFilterEngine(exercises: Record<number, ExerciseCatalog>, logs
 
     // Sort
     result.sort((a, b) => {
+      // Priority 0: Suggested Exercise
+      if (suggestedId) {
+        if (a.id === suggestedId) return -1;
+        if (b.id === suggestedId) return 1;
+      }
+
       const statsA = statsMap[a.id];
       const statsB = statsMap[b.id];
 
@@ -74,7 +84,7 @@ export function useFilterEngine(exercises: Record<number, ExerciseCatalog>, logs
     });
 
     return result;
-  }, [exercises, filterState, statsMap]);
+  }, [exercises, filterState, statsMap, suggestedId]);
 
   const setFilter = (key: keyof FilterState, value: string) => {
     setFilterState(prev => ({ ...prev, [key]: value }));
