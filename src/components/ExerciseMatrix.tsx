@@ -75,8 +75,19 @@ export function ExerciseMatrix() {
       setTimeout(() => setFatigueAlert(null), 4000);
     }
 
+    return processLogUpdate(newLog);
+  };
+
+  // Enhanced save handler for modal
+  // This function performs the "double action" atomically
+  const handleModalSave = useCallback(async (log: WorkoutLog) => {
+    return processLogUpdate(log);
+  }, [batchUpdate, getUpdatedMap, getSuggestion]);
+
+  // Shared logic for processing a new log (Quick Log or Modal Save)
+  const processLogUpdate = useCallback(async (newLog: WorkoutLog) => {
     // Atomic update
-    await batchUpdate(prevState => {
+    return batchUpdate(prevState => {
       // 1. Identify previous log for transition recording
       const sortedLogs = [...prevState.logs].sort((a, b) => b.timestamp - a.timestamp);
       const previousLog = sortedLogs.length > 0 ? sortedLogs[0] : null;
@@ -101,42 +112,6 @@ export function ExerciseMatrix() {
       // We construct a temporary state for the suggestion engine.
       const tempState = { ...prevState, logs: newLogs, transitionMap: newMap };
       const suggestion = getSuggestion(tempState, newLog.exerciseId);
-
-      return {
-        ...prevState,
-        logs: newLogs,
-        transitionMap: newMap,
-        activeNextSuggestion: suggestion
-      };
-    });
-  };
-
-  // Enhanced save handler for modal
-  // This function performs the "double action" atomically
-  const handleModalSave = useCallback(async (log: WorkoutLog) => {
-    return batchUpdate(prevState => {
-      // 1. Identify previous log for transition recording
-      const sortedLogs = [...prevState.logs].sort((a, b) => b.timestamp - a.timestamp);
-      const previousLog = sortedLogs.length > 0 ? sortedLogs[0] : null;
-
-      let newMap = prevState.transitionMap;
-      if (previousLog) {
-        // Record transition: Previous -> New
-        newMap = getUpdatedMap(
-          prevState.transitionMap,
-          previousLog.exerciseId,
-          log.exerciseId,
-          prevState.activeNextSuggestion
-        );
-      }
-
-      // 2. Add Log
-      const newLogs = [...prevState.logs, log];
-
-      // 3. Proactive Suggestion
-      // Construct temp state to include the just-added log for the suggestion engine logic
-      const tempState = { ...prevState, logs: newLogs, transitionMap: newMap };
-      const suggestion = getSuggestion(tempState, log.exerciseId);
 
       return {
         ...prevState,

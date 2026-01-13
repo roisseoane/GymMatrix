@@ -7,6 +7,7 @@ export class SmartRoutingEngine {
   private static DECAY_FACTOR = 0.95;
   private static REINFORCEMENT_FACTOR = 1.5;
   private static PENALTY_FACTOR = 0.9;
+  private static MIN_WEIGHT_THRESHOLD = 0.01;
   private static MIN_LOGS_FOR_SUGGESTION = 30;
 
   /**
@@ -63,6 +64,19 @@ export class SmartRoutingEngine {
       } else {
         transitions[actualToId] += this.INCREMENT;
       }
+    }
+
+    // 3. Pruning / Garbage Collection
+    // Remove weights below threshold to keep map clean and relevant
+    for (const targetId in transitions) {
+      if (transitions[targetId] < this.MIN_WEIGHT_THRESHOLD) {
+        delete transitions[targetId];
+      }
+    }
+
+    // Cleanup empty parent objects if needed
+    if (Object.keys(transitions).length === 0) {
+      delete newMap[key][fromId];
     }
 
     return newMap;

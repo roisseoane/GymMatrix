@@ -132,7 +132,7 @@ export function ZonalSwipeCard({
 
       {/* Foreground Card */}
       <motion.div
-        layout={isSuggested ? true : undefined}
+        layout="position"
         {...bind() as unknown as import('framer-motion').MotionProps}
         style={{ x, scale }}
         animate={isSuggested ? {
