@@ -205,13 +205,15 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
           {/* Modal Content - Bottom Sheet */}
           <motion.div
             drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.8 }}
+            dragConstraints={{ top: 0 }}
+            dragElastic={{ top: 0.05, bottom: 1 }}
+            dragSnapToOrigin={true}
             onDragEnd={onDragEnd}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 30, stiffness: 250 }}
+            style={{ willChange: 'transform' }}
             className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
           >
             {isSuccess ? (
