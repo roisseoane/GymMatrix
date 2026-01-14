@@ -2,6 +2,7 @@ import type { ExerciseCatalog } from '../types/models';
 import { Sparkline } from './Sparkline';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
+import { SmartInsightBadge } from './SmartInsightBadge';
 
 interface ExerciseCardProps {
   exercise: ExerciseCatalog;
@@ -29,6 +30,8 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
         cursor-pointer
       `}
     >
+      <SmartInsightBadge suggestion={suggestion || null} />
+
       <div>
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-semibold text-text tracking-tight leading-tight">
@@ -52,12 +55,6 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
           )}
         </div>
 
-        {suggestion && (
-          <div className="absolute top-4 right-4 text-right">
-             <span className="block text-[10px] text-muted/50 uppercase font-mono tracking-widest">{t('suggestion')}</span>
-             <span className="block text-xs text-primary/80 font-mono font-bold">{suggestion}</span>
-          </div>
-        )}
       </div>
 
       <div className="mt-auto pt-2">
