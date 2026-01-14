@@ -33,13 +33,15 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   useEffect(() => {
     if (isOpen) {
         document.body.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = '';
     }
+  }, [isOpen]);
+
+  // Safety cleanup on unmount
+  useEffect(() => {
     return () => {
         document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, []);
 
   // Reset or Pre-fill form when exercise changes or modal opens
   useEffect(() => {
@@ -182,7 +184,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={() => { document.body.style.overflow = ''; }}>
       {isOpen && exercise && (
         <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
           {/* Backdrop - Event Insulation */}
@@ -198,7 +200,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            exit={{
+              y: "100%",
+              transition: { duration: 0.25, ease: "easeIn" }
+            }}
             transition={{ type: "spring", damping: 25, stiffness: 300, mass: 0.8 }}
             style={{ willChange: 'transform' }}
             className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
