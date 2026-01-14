@@ -4,6 +4,7 @@ import { useFilterEngine } from '../hooks/useFilterEngine';
 import { useSmartRouting } from '../hooks/useSmartRouting';
 import { FilterBar } from './FilterBar';
 import { Header } from './Header';
+import { SessionControlCard } from './SessionControlCard';
 import { LogEntryModal } from './LogEntryModal';
 import type { ExerciseCatalog } from '../types/models';
 import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
@@ -165,8 +166,6 @@ export function ExerciseMatrix() {
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
         <Header
             lastLogTimestamp={lastGlobalLogTimestamp}
-            session={state.session}
-            onSessionUpdate={handleSessionUpdate}
         />
 
         <FilterBar
@@ -175,6 +174,11 @@ export function ExerciseMatrix() {
           options={options}
         />
       </div>
+
+      <SessionControlCard
+        session={state.session}
+        onUpdate={handleSessionUpdate}
+      />
 
       {fatigueAlert && (
         <motion.div

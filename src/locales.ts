@@ -30,6 +30,11 @@ export const translations = {
     weight_kg: 'Pes (kg)',
     library: 'Biblioteca',
     suggested_next: 'Següent recomanat',
+    start_session: 'INICIAR SESSIÓ',
+    pause_session: 'Pausar',
+    resume_session: 'Reprendre',
+    finish_session: 'Finalitzar',
+    session_active: 'Sessió Activa',
 
     // Muscles
     Chest: 'Pectoral',
@@ -121,6 +126,11 @@ export const translations = {
     weight_kg: 'Peso (kg)',
     library: 'Biblioteca',
     suggested_next: 'Siguiente recomendado',
+    start_session: 'INICIAR SESIÓN',
+    pause_session: 'Pausar',
+    resume_session: 'Reanudar',
+    finish_session: 'Finalizar',
+    session_active: 'Sesión Activa',
 
     // Muscles
     Chest: 'Pectoral',
@@ -212,6 +222,11 @@ export const translations = {
     weight_kg: 'Weight (kg)',
     library: 'Library',
     suggested_next: 'Next Recommended',
+    start_session: 'START SESSION',
+    pause_session: 'Pause',
+    resume_session: 'Resume',
+    finish_session: 'Finish',
+    session_active: 'Session Active',
 
     // Muscles
     Chest: 'Chest',

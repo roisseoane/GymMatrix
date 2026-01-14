@@ -1,17 +1,13 @@
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { AutomaticRestTimer } from './AutomaticRestTimer';
-import { GlobalTimer } from './GlobalTimer';
-import type { SessionState } from '../types/models';
 
 interface HeaderProps {
   title?: string;
   lastLogTimestamp?: number | null;
-  session?: SessionState;
-  onSessionUpdate?: (newSession: SessionState) => void;
 }
 
-export function Header({ title, lastLogTimestamp, session, onSessionUpdate }: HeaderProps) {
+export function Header({ title, lastLogTimestamp }: HeaderProps) {
   const { t } = useTranslation();
 
   return (
@@ -26,12 +22,6 @@ export function Header({ title, lastLogTimestamp, session, onSessionUpdate }: He
              </div>
         )}
       </div>
-
-      {session && onSessionUpdate && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <GlobalTimer session={session} onUpdate={onSessionUpdate} />
-          </div>
-      )}
 
       <div className="flex items-center gap-4 z-10">
         {lastLogTimestamp && (
