@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { type ExerciseCatalog, type WorkoutLog, type WorkoutSet, SetType, type SubSet } from '../types/models';
 import { SuccessCheckmark } from './SuccessCheckmark';
-import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { RIRSlider } from './RIRSlider';
 import { RIR_OPTIONS } from '../data/constants';
 import { useTranslation } from '../hooks/useTranslation';
@@ -153,14 +153,6 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
     }, 1500);
   };
 
-  const onDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    // Velocity check (High-Performance Gesture)
-    // If thrown downwards fast, close even if distance is small
-    if (info.velocity.y > 500 || info.offset.y > 100) {
-      onClose();
-    }
-  };
-
   const updateRow = (index: number, field: 'weight' | 'reps', value: string) => {
     const newRows = [...rows];
     newRows[index] = { ...newRows[index], [field]: value };
@@ -204,15 +196,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
 
           {/* Modal Content - Bottom Sheet */}
           <motion.div
-            drag="y"
-            dragConstraints={{ top: 0 }}
-            dragElastic={{ top: 0.05, bottom: 1 }}
-            dragSnapToOrigin={true}
-            onDragEnd={onDragEnd}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 250 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300, mass: 0.8 }}
             style={{ willChange: 'transform' }}
             className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
           >
@@ -220,8 +207,14 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
               <SuccessCheckmark />
             ) : (
               <>
-                {/* Drag Handle */}
-                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4 cursor-grab active:cursor-grabbing" />
+                {/* Close Handle - Interactive */}
+                <div
+                  className="w-full flex items-center justify-center py-4 -mt-4 mb-2 cursor-pointer touch-manipulation"
+                  onClick={onClose}
+                  aria-label="Close modal"
+                >
+                  <div className="w-12 h-1 bg-white/10 rounded-full" />
+                </div>
 
                 <div className="flex justify-between items-center mb-6">
                     <div>
