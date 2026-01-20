@@ -13,7 +13,7 @@ import { checkFatigue } from '../utils/fatigueMonitor';
 import type { WorkoutLog, WorkoutSet } from '../types/models';
 
 export function ExerciseMatrix() {
-  const { state, loading, batchUpdate } = usePersistentStore();
+  const { state, loading, batchUpdate, addExercise } = usePersistentStore();
   const { getUpdatedMap, getSuggestion } = useSmartRouting();
   const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
   const [fatigueAlert, setFatigueAlert] = useState<string | null>(null);
@@ -143,6 +143,10 @@ export function ExerciseMatrix() {
     return processLogUpdate(log);
   }, [processLogUpdate]);
 
+  const handleUpdateExercise = useCallback(async (exercise: ExerciseCatalog) => {
+    await addExercise(exercise);
+  }, [addExercise]);
+
   if (loading) {
     return (
       <div className="p-8 text-center text-muted animate-pulse">
@@ -222,6 +226,7 @@ export function ExerciseMatrix() {
         lastLog={selectedExercise ? state.logs.filter(l => l.exerciseId === selectedExercise.id).sort((a, b) => b.timestamp - a.timestamp)[0] : undefined}
         onClose={() => setSelectedExercise(null)}
         onSave={handleModalSave}
+        onUpdateExercise={handleUpdateExercise}
       />
     </div>
   );

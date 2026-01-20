@@ -12,12 +12,14 @@ interface LogEntryModalProps {
   exercise: ExerciseCatalog | null;
   lastLog?: WorkoutLog;
   onSave: (log: WorkoutLog) => Promise<boolean>;
+  onUpdateExercise?: (exercise: ExerciseCatalog) => Promise<void>;
 }
 
-export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: LogEntryModalProps) {
+export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUpdateExercise }: LogEntryModalProps) {
   const { t } = useTranslation();
   const [setsCount, setSetsCount] = useState<number>(3);
   const [rows, setRows] = useState<Array<{ weight: string, reps: string }>>([{ weight: '', reps: '' }]);
+  const [baseWeight, setBaseWeight] = useState<string>('0');
   const [rirValue, setRirValue] = useState<number>(3); // Default to '3+' (Relaxed)
   const [rest, setRest] = useState<string>('');
 
@@ -46,6 +48,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   // Reset or Pre-fill form when exercise changes or modal opens
   useEffect(() => {
     if (isOpen) {
+      // Initialize base weight from exercise definition
+      const initialBase = exercise?.baseWeight?.toString() || '0';
+      setBaseWeight(initialBase);
+
       if (lastLog && lastLog.sets.length > 0) {
         // Carry-over logic from previous log
         const lastSet = lastLog.sets[lastLog.sets.length - 1];
@@ -55,16 +61,25 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
         // Migration/Compatibility logic
         let initialRows = [{ weight: '', reps: '' }];
         if (lastSet.subSets && lastSet.subSets.length > 0) {
-          initialRows = lastSet.subSets.map(s => ({
-            weight: s.weight.toString(),
-            reps: s.reps.toString()
-          }));
+          initialRows = lastSet.subSets.map(s => {
+            const total = s.weight;
+            const base = parseFloat(initialBase) || 0;
+            // Provide the "Added Weight" (Plates) by subtracting base
+            const added = Math.max(0, total - base);
+            return {
+              weight: added.toString(),
+              reps: s.reps.toString()
+            };
+          });
         } else {
           // Fallback for old data structure (safe casting using unknown to match previous logic without any)
           const oldSet = lastSet as unknown as { weight: number; reps: number; rpe: number };
           if (oldSet.weight !== undefined) {
+             const total = oldSet.weight;
+             const base = parseFloat(initialBase) || 0;
+             const added = Math.max(0, total - base);
              initialRows = [{
-                weight: oldSet.weight.toString(),
+                weight: added.toString(),
                 reps: oldSet.reps.toString()
              }];
           }
@@ -112,12 +127,20 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
   const handleSubmit = async () => {
     if (!isValid || !exercise) return;
 
+    const baseVal = parseFloat(baseWeight) || 0;
+
+    // Check if base weight changed and update exercise definition
+    if (onUpdateExercise && baseVal !== (exercise.baseWeight || 0)) {
+        await onUpdateExercise({ ...exercise, baseWeight: baseVal });
+    }
+
     // Filter valid rows just in case, though validation prevents submit
     const validRows = effectiveRows.filter(r => r.weight && r.reps);
 
     const subSets: SubSet[] = validRows.map(r => ({
         reps: parseFloat(r.reps),
-        weight: parseFloat(r.weight),
+        // Save Total Weight (Base + Added)
+        weight: parseFloat(r.weight) + baseVal,
         rpe: currentRIR.rpe
     }));
 
@@ -248,22 +271,41 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave }: Lo
                   {(isDropSet ? rows : [rows[0]]).map((row, index) => (
                       <div key={index} className="grid grid-cols-2 gap-4">
                         {/* Weight */}
-                        <div className="relative">
-                          {index === 0 && <label className="block text-xs text-muted uppercase font-bold mb-1">{t('weight_kg')}</label>}
-                          <input
-                            type="number"
-                            value={row.weight}
-                            onChange={e => updateRow(index, 'weight', e.target.value)}
-                            placeholder="0"
-                            className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
-                          />
-                           {index === 0 && exercise && exercise.baseWeight !== undefined && exercise.baseWeight > 0 && parseFloat(row.weight) > exercise.baseWeight && (
-                            <div className="absolute top-1 right-2 pointer-events-none opacity-50">
-                               <span className="text-[10px] text-muted font-mono">
-                                 +{((parseFloat(row.weight) - exercise.baseWeight) / 2).toFixed(0)}/s
-                               </span>
-                            </div>
-                          )}
+                        <div className="relative flex flex-col gap-2">
+                           {/* Label & Base Weight Config */}
+                           {index === 0 && (
+                             <div className="flex justify-between items-end mb-1">
+                               <label className="block text-xs text-muted uppercase font-bold">{t('weight_kg')}</label>
+                               <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-muted uppercase font-bold">Base:</span>
+                                  <input
+                                    type="number"
+                                    value={baseWeight}
+                                    onChange={(e) => setBaseWeight(e.target.value)}
+                                    className="w-10 bg-transparent border-b border-white/10 text-right text-xs text-muted focus:outline-none focus:border-white/30 p-0"
+                                    placeholder="0"
+                                  />
+                               </div>
+                             </div>
+                           )}
+
+                          <div className="relative">
+                              <input
+                                type="number"
+                                value={row.weight}
+                                onChange={e => updateRow(index, 'weight', e.target.value)}
+                                placeholder="0"
+                                className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
+                              />
+                               {/* Plate Assistant: Now calculates directly from input (Added Weight) */}
+                               {index === 0 && parseFloat(row.weight) > 0 && (
+                                <div className="absolute top-1 right-2 pointer-events-none opacity-50">
+                                   <span className="text-[10px] text-muted font-mono">
+                                     +{(parseFloat(row.weight) / 2).toFixed(1).replace('.0','')}/s
+                                   </span>
+                                </div>
+                              )}
+                          </div>
                         </div>
 
                         {/* Reps */}
