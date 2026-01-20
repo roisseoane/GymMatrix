@@ -35,6 +35,9 @@ export const translations = {
     resume_session: 'Reprendre',
     finish_session: 'Finalitzar',
     session_active: 'Sessió Activa',
+    todays_session: 'Sessió d\'avui',
+    no_logs_yet: 'Cap registre encara',
+    total_volume: 'Volum Total',
 
     // Muscles
     Chest: 'Pectoral',
@@ -131,6 +134,9 @@ export const translations = {
     resume_session: 'Reanudar',
     finish_session: 'Finalizar',
     session_active: 'Sesión Activa',
+    todays_session: 'Sesión de hoy',
+    no_logs_yet: 'Sin registros aún',
+    total_volume: 'Volumen Total',
 
     // Muscles
     Chest: 'Pectoral',
@@ -227,6 +233,9 @@ export const translations = {
     resume_session: 'Resume',
     finish_session: 'Finish',
     session_active: 'Session Active',
+    todays_session: 'Today\'s Session',
+    no_logs_yet: 'No logs yet',
+    total_volume: 'Total Volume',
 
     // Muscles
     Chest: 'Chest',

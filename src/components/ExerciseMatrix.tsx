@@ -5,6 +5,7 @@ import { useSmartRouting } from '../hooks/useSmartRouting';
 import { FilterBar } from './FilterBar';
 import { Header } from './Header';
 import { LogEntryModal } from './LogEntryModal';
+import { DailyLogSheet } from './DailyLogSheet';
 import type { ExerciseCatalog } from '../types/models';
 import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
 import { calculateSuggestion } from '../utils/predictiveLoad';
@@ -16,6 +17,7 @@ export function ExerciseMatrix() {
   const { state, loading, batchUpdate, addExercise } = usePersistentStore();
   const { getUpdatedMap, getSuggestion } = useSmartRouting();
   const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
+  const [isDailyLogOpen, setIsDailyLogOpen] = useState(false);
   const [fatigueAlert, setFatigueAlert] = useState<string | null>(null);
 
   // Use state for current time to be pure
@@ -158,7 +160,7 @@ export function ExerciseMatrix() {
   return (
     <div className="container mx-auto p-4 pb-24">
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
-        <Header />
+        <Header onOpenDailyLog={() => setIsDailyLogOpen(true)} />
 
         <FilterBar
           filterState={filterState}
@@ -227,6 +229,11 @@ export function ExerciseMatrix() {
         onClose={() => setSelectedExercise(null)}
         onSave={handleModalSave}
         onUpdateExercise={handleUpdateExercise}
+      />
+
+      <DailyLogSheet
+        isOpen={isDailyLogOpen}
+        onClose={() => setIsDailyLogOpen(false)}
       />
     </div>
   );
