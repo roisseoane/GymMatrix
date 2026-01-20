@@ -50,18 +50,10 @@ export interface TransitionMap {
   };
 }
 
-export interface SessionState {
-  startTime: number | null;
-  totalPausedTime: number; // in milliseconds
-  isPaused: boolean;
-  lastPauseStartTime: number | null;
-}
-
 // Estado global de la aplicación para persistencia
 export interface AppState {
   exercises: Record<number, ExerciseCatalog>;
   logs: WorkoutLog[];
   transitionMap: TransitionMap;
   activeNextSuggestion?: number[] | null;
-  session: SessionState;
 }
