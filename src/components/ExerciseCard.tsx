@@ -3,6 +3,7 @@ import { Sparkline } from './Sparkline';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
 import { SmartInsightBadge } from './SmartInsightBadge';
+import { MUSCLE_COLORS } from '../data/constants';
 
 interface ExerciseCardProps {
   exercise: ExerciseCatalog;
@@ -14,6 +15,10 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, suggestion, onClick }: ExerciseCardProps) {
   const { t } = useTranslation();
+  const muscleColor = MUSCLE_COLORS[exercise.muscleGroup] || 'rgba(255, 255, 255, 0.1)';
+
+  // Only apply dynamic style if not completed, to preserve the "Done" state clarity
+  const dynamicStyle = !isCompletedToday ? { '--muscle-aura': muscleColor } as React.CSSProperties : undefined;
 
   return (
     <motion.div
@@ -21,10 +26,14 @@ export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = fal
       whileTap={{ scale: 0.95 }}
       transition={{ duration: 0.2 }}
       onClick={onClick}
+      style={dynamicStyle}
       className={`
         group relative flex flex-col justify-between p-4 h-full
         bg-surface/50 backdrop-blur-md
-        border ${isCompletedToday ? 'border-primary/50 bg-primary/5' : 'border-white/5'}
+        border
+        ${isCompletedToday
+          ? 'border-primary/50 bg-primary/5'
+          : 'border-[color:var(--muscle-aura)] shadow-[inset_0_0_20px_-10px_var(--muscle-aura)]'}
         rounded-xl
         hover:bg-surface/70 hover:shadow-lg hover:shadow-primary/10
         cursor-pointer
