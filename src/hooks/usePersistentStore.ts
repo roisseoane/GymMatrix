@@ -8,12 +8,6 @@ const INITIAL_STATE: AppState = {
   logs: [],
   transitionMap: {},
   activeNextSuggestion: [],
-  session: {
-    startTime: null,
-    totalPausedTime: 0,
-    isPaused: false,
-    lastPauseStartTime: null,
-  },
 };
 
 interface UsePersistentStoreResult {
