@@ -105,19 +105,7 @@ export function ZonalSwipeCard({
           }
         }}
         style={{ x, scale, touchAction: 'pan-y' }}
-        animate={isSuggested ? {
-          boxShadow: [
-            "0 0 0 1px rgba(6,182,212,0.3)",
-            "0 0 0 3px rgba(6,182,212,0.6)",
-            "0 0 0 1px rgba(6,182,212,0.3)"
-          ]
-        } : {}}
-        transition={isSuggested ? {
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        } : undefined}
-        className={`relative z-10 h-full bg-surface rounded-xl shadow-sm ${isSuggested ? 'border border-cyan-500/50' : ''} ${isLastLogWarmup ? 'bg-blue-500/5 border-blue-500/20' : ''}`}
+        className={`relative z-10 h-full bg-surface rounded-xl shadow-sm ${isLastLogWarmup ? 'bg-blue-500/5 border border-blue-500/20' : ''}`}
         // Prevent click when swiping
         onClick={() => {
           if (!swiping && x.get() === 0) {
@@ -129,6 +117,7 @@ export function ZonalSwipeCard({
           exercise={exercise}
           recentLogs={recentLogs}
           isCompletedToday={isCompletedToday}
+          isHighlighted={isSuggested}
           suggestion={suggestion}
           // We handle click in the wrapper
           onClick={undefined}

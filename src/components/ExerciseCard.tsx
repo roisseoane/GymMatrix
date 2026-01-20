@@ -9,33 +9,46 @@ interface ExerciseCardProps {
   exercise: ExerciseCatalog;
   recentLogs?: number[]; // Array of recent max weights or volumes
   isCompletedToday?: boolean;
+  isHighlighted?: boolean;
   suggestion?: string | null;
   onClick?: () => void;
 }
 
-export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, suggestion, onClick }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, recentLogs = [], isCompletedToday = false, isHighlighted = false, suggestion, onClick }: ExerciseCardProps) {
   const { t } = useTranslation();
-  const muscleColor = MUSCLE_COLORS[exercise.muscleGroup] || 'rgba(255, 255, 255, 0.1)';
+  const muscleColor = (!isHighlighted && !isCompletedToday) ? (MUSCLE_COLORS[exercise.muscleGroup] || 'rgba(255, 255, 255, 0.1)') : undefined;
 
-  // Only apply dynamic style if not completed, to preserve the "Done" state clarity
-  const dynamicStyle = !isCompletedToday ? { '--muscle-aura': muscleColor } as React.CSSProperties : undefined;
+  // Only apply dynamic style if not completed and not highlighted
+  const dynamicStyle = muscleColor ? { '--muscle-aura': muscleColor } as React.CSSProperties : undefined;
 
   return (
     <motion.div
       layout
       whileTap={{ scale: 0.95 }}
-      transition={{ duration: 0.2 }}
+      animate={isHighlighted ? {
+        backgroundColor: ["rgba(6,182,212,0.1)", "rgba(6,182,212,0.2)", "rgba(6,182,212,0.1)"],
+        borderColor: ["rgba(6,182,212,0.3)", "rgba(6,182,212,0.6)", "rgba(6,182,212,0.3)"]
+      } : undefined}
+      transition={isHighlighted ? {
+        duration: 3.5,
+        repeat: Infinity,
+        ease: "easeInOut"
+      } : { duration: 0.2 }}
       onClick={onClick}
       style={dynamicStyle}
       className={`
         group relative flex flex-col justify-between p-4 h-full
-        bg-surface/50 backdrop-blur-md
+        backdrop-blur-md
         border
-        ${isCompletedToday
+        ${isHighlighted ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-surface/50'}
+        ${!isHighlighted && isCompletedToday
           ? 'border-primary/50 bg-primary/5'
-          : 'border-[color:var(--muscle-aura)] shadow-[inset_0_0_20px_-10px_var(--muscle-aura)]'}
+          : ''}
+        ${!isHighlighted && !isCompletedToday
+          ? 'border-[color:var(--muscle-aura)] shadow-[inset_0_0_20px_-10px_var(--muscle-aura)]'
+          : ''}
         rounded-xl
-        hover:bg-surface/70 hover:shadow-lg hover:shadow-primary/10
+        ${!isHighlighted ? 'hover:bg-surface/70 hover:shadow-lg hover:shadow-primary/10' : ''}
         cursor-pointer
       `}
     >
