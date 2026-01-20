@@ -32,22 +32,40 @@ export function usePersistentStore(): UsePersistentStoreResult {
     const load = async () => {
       setLoading(true);
       try {
-        // Simulate async if needed, or just run synchronous load
+        // 1. Rebuild the exercise map from current source code logic
+        // This ensures that regardless of what's in storage, we use the latest exercise definitions/IDs
+        const currentExerciseMap: Record<number, ExerciseCatalog> = {};
+        INITIAL_EXERCISES.forEach(ex => {
+          currentExerciseMap[ex.id] = ex;
+        });
+
+        // 2. Load existing data
         // LocalStorage is sync, but we treat it as an effect to not block render
         const loadedData = DataService.load();
+
+        let finalState: AppState;
+
         if (loadedData) {
-          // Merge with INITIAL_STATE to ensure new fields (like transitionMap) exist if loading old data
-          setState({ ...INITIAL_STATE, ...loadedData });
+          // 3a. If data exists, merge it but FORCE overwrite the exercises catalog
+          // This keeps logs, stats, settings, etc., but updates the definitions to the new structure
+          finalState = {
+            ...INITIAL_STATE,
+            ...loadedData,
+            exercises: currentExerciseMap
+          };
         } else {
-          // Initialize with seed data if storage is empty
-          const seedExercises: Record<number, ExerciseCatalog> = {};
-          INITIAL_EXERCISES.forEach(ex => {
-            seedExercises[ex.id] = ex;
-          });
-          const seedState = { ...INITIAL_STATE, exercises: seedExercises };
-          setState(seedState);
-          DataService.save(seedState);
+          // 3b. If no data, initialize fresh with the current exercises
+          finalState = {
+            ...INITIAL_STATE,
+            exercises: currentExerciseMap
+          };
         }
+
+        // 4. Update state and Persist immediately
+        // This effectively "migrates" the storage to the new ID structure on first load
+        setState(finalState);
+        DataService.save(finalState);
+
       } catch (err) {
         setError('Failed to load data.');
         console.error(err);
