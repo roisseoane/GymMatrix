@@ -11,10 +11,11 @@ import { LayoutGroup, AnimatePresence, motion } from 'framer-motion';
 import { calculateSuggestion } from '../utils/predictiveLoad';
 import { ZonalSwipeCard } from './ZonalSwipeCard';
 import { checkFatigue } from '../utils/fatigueMonitor';
+import { DangerZone } from './DangerZone';
 import type { WorkoutLog, WorkoutSet } from '../types/models';
 
 export function ExerciseMatrix() {
-  const { state, loading, batchUpdate, addExercise } = usePersistentStore();
+  const { state, loading, batchUpdate, addExercise, clearData } = usePersistentStore();
   const { getUpdatedMap, getSuggestion } = useSmartRouting();
   const [selectedExercise, setSelectedExercise] = useState<ExerciseCatalog | null>(null);
   const [isDailyLogOpen, setIsDailyLogOpen] = useState(false);
@@ -235,6 +236,11 @@ export function ExerciseMatrix() {
         isOpen={isDailyLogOpen}
         onClose={() => setIsDailyLogOpen(false)}
       />
+
+      <DangerZone onDelete={() => {
+        clearData();
+        window.location.reload();
+      }} />
     </div>
   );
 }
