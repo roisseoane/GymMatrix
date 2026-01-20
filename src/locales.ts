@@ -34,7 +34,7 @@ export const translations = {
     pause_session: 'Pausar',
     resume_session: 'Reprendre',
     finish_session: 'Finalitzar',
-    finish_workout: 'TERMINAR ENTRENAMENT',
+    finish_workout: 'ACABAR ENTRENAMENT',
     save_session_time: 'GUARDAR TEMPS DE SESSIÓ',
     session_duration_placeholder: 'hh:mm:ss',
     session_active: 'Sessió Activa',
@@ -54,26 +54,26 @@ export const translations = {
     // Equipment
     Barbell: 'Barra',
     Bodyweight: 'Pes Corporal',
-    Dumbbell: 'Manuella',
+    Dumbbell: 'Mancorna',
     Machine: 'Màquina',
     Cable: 'Politja',
 
     // RIR
-    rir_failure: 'Fallada total',
-    rir_near_failure: 'Quasi fallada',
+    rir_failure: 'Fallo total',
+    rir_near_failure: 'Quasi fallo',
     rir_1_2_more: '1-2 més',
     rir_3_plus: '3 o més',
 
     // Swipe Feedback
     swipe_easy: 'Fàcil',
     swipe_hard: 'Difícil',
-    swipe_failure: 'Fallada',
+    swipe_failure: 'Fallo',
 
     // Tags
     Compound: 'Compost',
     Isolation: 'Aïllament',
-    Push: 'Empenta',
-    Pull: 'Tracció',
+    Push: 'Apretar',
+    Pull: 'Estirar',
     Strength: 'Força',
     Accessory: 'Accessori',
     Prehab: 'Prehab',
@@ -86,8 +86,8 @@ export const translations = {
     'Deadlift': 'Pes Mort',
     'Overhead Press': 'Press Militar',
     'Pull Up': 'Dominada',
-    'Dumbbell Row': 'Rem amb Manuella',
-    'Dumbbell Bench Press': 'Press Banca Manuelles',
+    'Dumbbell Row': 'Rem amb Mancorna',
+    'Dumbbell Bench Press': 'Press Banca Mancorna',
     'Lunges': 'Gambades',
     'Leg Press': 'Premsa de Cames',
     'Lat Pulldown': 'Tracció al Pit',
