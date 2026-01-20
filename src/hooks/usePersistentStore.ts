@@ -8,6 +8,7 @@ const INITIAL_STATE: AppState = {
   logs: [],
   transitionMap: {},
   activeNextSuggestion: [],
+  sessionMetadata: {},
 };
 
 interface UsePersistentStoreResult {

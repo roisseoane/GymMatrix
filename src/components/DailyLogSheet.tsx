@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersistentStore } from '../hooks/usePersistentStore';
 import { useTranslation } from '../hooks/useTranslation';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { SuccessCheckmark } from './SuccessCheckmark';
 
 interface DailyLogSheetProps {
   isOpen: boolean;
@@ -9,13 +10,21 @@ interface DailyLogSheetProps {
 }
 
 export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
-  const { state } = usePersistentStore();
+  const { state, batchUpdate } = usePersistentStore();
   const { t } = useTranslation();
+
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [duration, setDuration] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Disable body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Reset local state when opened
+      setIsFinishing(false);
+      setDuration('');
+      setIsSuccess(false);
     } else {
       document.body.style.overflow = '';
     }
@@ -23,6 +32,8 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
+
+  const todayKey = new Date().toISOString().split('T')[0];
 
   const todaysLogs = useMemo(() => {
     const now = new Date();
@@ -64,6 +75,47 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
       ...data
     }));
   }, [state.logs]);
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+
+    // Mask logic: hh:mm:ss
+    if (val.length > 6) val = val.slice(0, 6);
+
+    let formatted = val;
+    if (val.length > 2) {
+      formatted = `${val.slice(0, 2)}:${val.slice(2)}`;
+    }
+    if (val.length > 4) {
+      formatted = `${formatted.slice(0, 5)}:${val.slice(4)}`;
+    }
+
+    setDuration(formatted);
+  };
+
+  const handleFinishSession = async () => {
+    if (duration.length < 8) return; // Simple validation for full hh:mm:ss
+
+    await batchUpdate(prev => ({
+        ...prev,
+        sessionMetadata: {
+            ...prev.sessionMetadata,
+            [todayKey]: {
+                duration: duration,
+                completed: true
+            }
+        }
+    }));
+
+    setIsSuccess(true);
+    setTimeout(() => {
+        onClose();
+    }, 1500);
+  };
+
+  const isSessionFinished = !!state.sessionMetadata?.[todayKey]?.completed;
+  // If already finished, maybe show the time?
+  const savedDuration = state.sessionMetadata?.[todayKey]?.duration;
 
   return (
     <AnimatePresence>
@@ -138,13 +190,83 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
             </div>
 
             {/* Footer Summary */}
-            <div className="p-6 border-t border-white/5 bg-black/20">
+            <div className="p-6 border-t border-white/5 bg-black/20 flex flex-col gap-4">
                  <div className="flex justify-between items-center text-sm">
                      <span className="text-muted font-bold uppercase">{t('total_volume')}</span>
                      <span className="text-text font-bold font-mono">
                         {todaysLogs.reduce((acc, curr) => acc + curr.sets, 0)} {t('sets')}
                      </span>
                  </div>
+
+                 {/* Session Finish Action */}
+                 {isSuccess ? (
+                    <div className="flex justify-center py-4">
+                        <SuccessCheckmark />
+                    </div>
+                 ) : isSessionFinished && !isFinishing ? (
+                    <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/20 rounded-xl">
+                         <span className="text-primary font-bold uppercase text-xs">{t('session_active')}</span>
+                         <span className="text-text font-mono font-bold">{savedDuration}</span>
+                    </div>
+                 ) : (
+                    <div className="mt-2">
+                        <AnimatePresence mode='wait'>
+                            {!isFinishing ? (
+                                <motion.button
+                                    key="finish-btn"
+                                    layout
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    onClick={() => setIsFinishing(true)}
+                                    className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-text font-bold uppercase tracking-wide hover:bg-white/10 transition-colors"
+                                >
+                                    {t('finish_workout')}
+                                </motion.button>
+                            ) : (
+                                <motion.div
+                                    key="input-area"
+                                    layout
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="flex flex-col gap-3"
+                                >
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={duration}
+                                            onChange={handleDurationChange}
+                                            placeholder={t('session_duration_placeholder')}
+                                            className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5 font-mono"
+                                            maxLength={8}
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleFinishSession}
+                                        disabled={duration.length < 8}
+                                        className={`w-full py-3 rounded-xl font-bold uppercase tracking-wide transition-all ${
+                                            duration.length === 8
+                                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/20 hover:bg-green-600'
+                                            : 'bg-white/5 text-muted cursor-not-allowed'
+                                        }`}
+                                    >
+                                        {t('save_session_time')}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setIsFinishing(false)}
+                                        className="text-xs text-muted uppercase font-bold text-center mt-1 hover:text-white"
+                                    >
+                                        {t('cancel')}
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                 )}
             </div>
           </motion.div>
         </>

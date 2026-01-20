@@ -50,10 +50,16 @@ export interface TransitionMap {
   };
 }
 
+export interface SessionMetadata {
+  duration: string; // Format hh:mm:ss
+  completed: boolean;
+}
+
 // Estado global de la aplicación para persistencia
 export interface AppState {
   exercises: Record<number, ExerciseCatalog>;
   logs: WorkoutLog[];
   transitionMap: TransitionMap;
   activeNextSuggestion?: number[] | null;
+  sessionMetadata: Record<string, SessionMetadata>; // Key: YYYY-MM-DD
 }
