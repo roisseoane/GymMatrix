@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { Header } from './Header';
 
 export function CalendarView() {
   // Placeholder data for calendar grid
@@ -8,8 +7,7 @@ export function CalendarView() {
   return (
     <div className="container mx-auto p-4 pb-24">
       {/* Reusing the sticky header pattern from ExerciseMatrix for consistency */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-4 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
-        <Header title="Calendar" />
+      <div className="sticky top-[80px] z-40 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-2 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
         {/* Placeholder for future calendar controls (Month selector, etc) */}
         <div className="flex gap-2 pb-2 overflow-x-auto text-sm text-muted">
           <span className="px-3 py-1 bg-white/10 rounded-full text-white">October 2023</span>
