@@ -51,7 +51,7 @@ function App() {
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-white/5 px-4 pt-safe-top pb-2 min-h-[80px] flex flex-col justify-end">
         <Header
           currentView={currentView}
-          onNavigate={handleViewChange}
+          onViewChange={handleViewChange}
           onOpenDailyLog={() => setIsDailyLogOpen(true)}
         />
       </div>
