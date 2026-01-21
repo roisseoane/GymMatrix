@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ExerciseMatrix } from './components/ExerciseMatrix';
 import { CalendarView } from './components/CalendarView';
-import { BottomNavigation } from './components/BottomNavigation';
 import { Header } from './components/Header';
 import { DailyLogSheet } from './components/DailyLogSheet';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -80,9 +79,6 @@ function App() {
         isOpen={isDailyLogOpen}
         onClose={() => setIsDailyLogOpen(false)}
       />
-
-      {/* Navigation Bar */}
-      <BottomNavigation currentView={currentView} onChange={handleViewChange} />
     </div>
   );
 }
