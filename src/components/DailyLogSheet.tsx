@@ -7,15 +7,24 @@ import { SuccessCheckmark } from './SuccessCheckmark';
 interface DailyLogSheetProps {
   isOpen: boolean;
   onClose: () => void;
+  date?: Date; // Optional date to show history
 }
 
-export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
+export function DailyLogSheet({ isOpen, onClose, date }: DailyLogSheetProps) {
   const { state, batchUpdate } = usePersistentStore();
   const { t } = useTranslation();
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [duration, setDuration] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const targetDate = useMemo(() => date || new Date(), [date]);
+  const isToday = useMemo(() => {
+    const now = new Date();
+    return targetDate.getDate() === now.getDate() &&
+           targetDate.getMonth() === now.getMonth() &&
+           targetDate.getFullYear() === now.getFullYear();
+  }, [targetDate]);
 
   // Disable body scroll when open
   useEffect(() => {
@@ -33,14 +42,19 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
     };
   }, [isOpen]);
 
-  const todayKey = new Date().toISOString().split('T')[0];
+  // Format date key as local date string YYYY-MM-DD
+  const dateKey = useMemo(() => {
+    const offset = targetDate.getTimezoneOffset();
+    const localDate = new Date(targetDate.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  }, [targetDate]);
 
   const todaysLogs = useMemo(() => {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const endOfDay = startOfDay + 86400000; // +24 hours
 
-    // Get logs from today
-    const logs = state.logs.filter(log => log.timestamp >= startOfDay);
+    // Get logs for the target date
+    const logs = state.logs.filter(log => log.timestamp >= startOfDay && log.timestamp < endOfDay);
 
     // Group by exercise to show summary
     const grouped = new Map();
@@ -74,7 +88,7 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
       id,
       ...data
     }));
-  }, [state.logs]);
+  }, [state.logs, targetDate]);
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');
@@ -100,7 +114,7 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
         ...prev,
         sessionMetadata: {
             ...prev.sessionMetadata,
-            [todayKey]: {
+            [dateKey]: {
                 duration: duration,
                 completed: true
             }
@@ -113,9 +127,14 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
     }, 1500);
   };
 
-  const isSessionFinished = !!state.sessionMetadata?.[todayKey]?.completed;
+  const isSessionFinished = !!state.sessionMetadata?.[dateKey]?.completed;
   // If already finished, maybe show the time?
-  const savedDuration = state.sessionMetadata?.[todayKey]?.duration;
+  const savedDuration = state.sessionMetadata?.[dateKey]?.duration;
+
+  // Format header date
+  const headerTitle = isToday
+    ? t('todays_session')
+    : targetDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <AnimatePresence>
@@ -140,7 +159,7 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <h2 className="text-xl font-bold text-text">{t('todays_session')}</h2>
+              <h2 className="text-xl font-bold text-text capitalize">{headerTitle}</h2>
               <button
                 onClick={onClose}
                 className="p-2 rounded-full hover:bg-white/5 text-muted hover:text-white transition-colors"
@@ -198,7 +217,7 @@ export function DailyLogSheet({ isOpen, onClose }: DailyLogSheetProps) {
                      </span>
                  </div>
 
-                 {/* Session Finish Action */}
+                 {/* Session Finish Action - Only show if it is today or if we allow editing past sessions (allowing for now) */}
                  {isSuccess ? (
                     <div className="flex justify-center py-4">
                         <SuccessCheckmark />
