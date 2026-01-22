@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ExerciseMatrix } from './components/ExerciseMatrix';
 import { CalendarView } from './components/CalendarView';
-import { BottomNavigation } from './components/BottomNavigation';
 import { Header } from './components/Header';
 import { DailyLogSheet } from './components/DailyLogSheet';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -52,7 +51,7 @@ function App() {
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-white/5 px-4 pt-safe-top pb-2 min-h-[80px] flex flex-col justify-end">
         <Header
           currentView={currentView}
-          onNavigate={handleViewChange}
+          onViewChange={handleViewChange}
           onOpenDailyLog={() => setIsDailyLogOpen(true)}
         />
       </div>
@@ -80,9 +79,6 @@ function App() {
         isOpen={isDailyLogOpen}
         onClose={() => setIsDailyLogOpen(false)}
       />
-
-      {/* Navigation Bar */}
-      <BottomNavigation currentView={currentView} onChange={handleViewChange} />
     </div>
   );
 }

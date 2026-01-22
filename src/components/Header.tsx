@@ -4,11 +4,11 @@ import { useTranslation } from '../hooks/useTranslation';
 
 interface HeaderProps {
   currentView: 'library' | 'calendar';
-  onNavigate: (view: 'library' | 'calendar') => void;
+  onViewChange: (view: 'library' | 'calendar') => void;
   onOpenDailyLog: () => void;
 }
 
-export function Header({ currentView, onNavigate, onOpenDailyLog }: HeaderProps) {
+export function Header({ currentView, onViewChange, onOpenDailyLog }: HeaderProps) {
   const { t } = useTranslation();
 
   // Simple mapping since 'calendar' key might be missing in locales
@@ -16,31 +16,51 @@ export function Header({ currentView, onNavigate, onOpenDailyLog }: HeaderProps)
     ? t('library')
     : (t('calendar') === 'calendar' ? (t('library') === 'Biblioteca' ? 'Calendario' : 'Calendar') : t('calendar'));
 
+  // Variants for title animation based on view direction
+  const variants = {
+    enter: (view: 'library' | 'calendar') => ({
+      x: view === 'library' ? 50 : -50,
+      opacity: 0
+    }),
+    center: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (view: 'library' | 'calendar') => ({
+      x: view === 'library' ? 50 : -50,
+      opacity: 0
+    })
+  };
+
   return (
     <div className="relative flex justify-between items-center h-full">
       <div className="flex flex-col gap-1 z-10 cursor-grab active:cursor-grabbing touch-none select-none">
         <h1 className="text-3xl font-bold text-text tracking-tight overflow-hidden relative min-w-[150px]">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
+          <AnimatePresence mode="wait" initial={false} custom={currentView}>
+            <motion.div
               key={currentView}
-              className="block"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              custom={currentView}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
               transition={{ duration: 0.2 }}
               drag="x"
-              dragConstraints={{ left: 0, right: 100 }}
-              dragElastic={0.1}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
               onDragEnd={(_, info) => {
-                // Trigger only if dragging right > 50px AND currently in library
-                if (info.offset.x > 50 && currentView === 'library') {
-                  onNavigate('calendar');
+                const { x } = info.offset;
+                if (x > 30) {
+                  onViewChange('calendar');
+                } else if (x < -30) {
+                  onViewChange('library');
                 }
               }}
               whileTap={{ scale: 0.95 }}
+              className="w-full h-full block"
             >
               {title}
-            </motion.span>
+            </motion.div>
           </AnimatePresence>
         </h1>
       </div>

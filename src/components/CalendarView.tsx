@@ -85,7 +85,7 @@ export function CalendarView() {
   }, [state.logs, state.exercises]);
 
   return (
-    <div className="container mx-auto p-4 pb-24">
+    <div className="container mx-auto p-4">
       {/* Sticky Header for Calendar Controls */}
       <div className="sticky top-[80px] z-40 bg-black/80 backdrop-blur-md pb-2 -mx-4 px-4 pt-2 border-b border-white/5 mb-4 shadow-xl shadow-black/20">
          <div className="flex justify-between items-center h-8">
