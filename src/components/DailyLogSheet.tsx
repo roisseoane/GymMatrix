@@ -69,21 +69,15 @@ export function DailyLogSheet({ isOpen, onClose, date }: DailyLogSheetProps) {
       }
       const entry = grouped.get(log.exerciseId);
       entry.count += 1;
-      entry.sets += log.sets.length;
+      entry.sets += log.series ? log.series.length : 0;
       entry.logIds.push(log.id);
 
       // Simple metric: max weight used
-      log.sets.forEach(s => {
-          if (s.subSets && s.subSets.length > 0) {
-            s.subSets.forEach(sub => {
-                if (sub.weight > entry.totalWeight) entry.totalWeight = sub.weight;
-            });
-          } else {
-             // Legacy support
-             const leg = s as unknown as { weight: number };
-             if (leg.weight && leg.weight > entry.totalWeight) entry.totalWeight = leg.weight;
-          }
-      });
+      if (log.series) {
+          log.series.forEach(s => {
+              if (s.weight > entry.totalWeight) entry.totalWeight = s.weight;
+          });
+      }
     });
 
     return Array.from(grouped.entries()).map(([exerciseId, data]) => ({

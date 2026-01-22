@@ -10,7 +10,7 @@ import { calculateSuggestion } from '../utils/predictiveLoad';
 import { ZonalSwipeCard } from './ZonalSwipeCard';
 import { checkFatigue } from '../utils/fatigueMonitor';
 import { DangerZone } from './DangerZone';
-import type { WorkoutLog, WorkoutSet } from '../types/models';
+import type { WorkoutLog } from '../types/models';
 
 export function ExerciseMatrix() {
   const { state, loading, batchUpdate, addExercise, clearData } = usePersistentStore();
@@ -35,13 +35,8 @@ export function ExerciseMatrix() {
       .sort((a, b) => a.timestamp - b.timestamp)
       .map(log => {
          // Return max weight of the session
-         // Handle subSets structure: assume subSets[0] is primary for graph unless advanced logic needed
-         return Math.max(...log.sets.map(s => {
-             if (s.subSets && s.subSets.length > 0) return s.subSets[0].weight;
-             // Fallback for legacy data
-             const legacySet = s as unknown as { weight: number };
-             return legacySet.weight || 0;
-         }));
+         if (!log.series || log.series.length === 0) return 0;
+         return Math.max(...log.series.map(s => s.weight));
       });
   }, [state.logs]);
 
@@ -101,30 +96,21 @@ export function ExerciseMatrix() {
     if (exerciseLogs.length === 0) return; // Cannot quick log without history
 
     const lastLog = exerciseLogs[0];
-    const newSets: WorkoutSet[] = lastLog.sets.map(s => {
-      // Legacy handling
-      let currentSubSets = s.subSets;
-      if (!currentSubSets || currentSubSets.length === 0) {
-          const oldSet = s as unknown as { weight: number; reps: number; rpe: number };
-          currentSubSets = [{
-              weight: oldSet.weight,
-              reps: oldSet.reps,
-              rpe: oldSet.rpe
-          }];
-      }
 
-      return {
+    // Check compatibility with new series model
+    if (!lastLog.series) return;
+
+    const newSeries = lastLog.series.map(s => ({
         ...s,
-        subSets: currentSubSets.map(sub => ({ ...sub, rpe }))
-      };
-    });
+        rir: Math.max(0, 10 - rpe) // Map RPE (1-10) to RIR (approx)
+    }));
 
     const timestamp = new Date().getTime();
     const newLog: WorkoutLog = {
       id: crypto.randomUUID(),
       timestamp: timestamp,
       exerciseId: exercise.id,
-      sets: newSets
+      series: newSeries
     };
 
     // Check Fatigue
@@ -194,14 +180,7 @@ export function ExerciseMatrix() {
                   recentLogs={getExerciseHistory(exercise.id)}
                   isCompletedToday={isCompletedToday(exercise.id)}
                   isSuggested={state.activeNextSuggestion ? state.activeNextSuggestion[0] === exercise.id : false}
-                  isLastLogWarmup={(() => {
-                      const logs = state.logs.filter(l => l.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
-                      if (logs.length === 0 || !logs[0].sets || logs[0].sets.length === 0) return false;
-                      // Check if the last set was a warmup
-                      const lastSet = logs[0].sets[logs[0].sets.length - 1];
-                      // Legacy check included via SetType or isWarmup flag
-                      return lastSet.isWarmup || lastSet.type === 'WARMUP';
-                  })()}
+                  isLastLogWarmup={false}
                   suggestion={calculateSuggestion(state.logs, exercise.id, checkFatigue(state.logs, exercise.id, now))}
                   onClick={() => setSelectedExercise(exercise)}
                   onQuickLog={(rpe) => handleQuickLog(exercise, rpe)}
