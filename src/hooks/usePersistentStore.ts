@@ -18,6 +18,7 @@ interface UsePersistentStoreResult {
   saveData: (newState: AppState) => Promise<boolean>;
   addExercise: (exercise: ExerciseCatalog) => Promise<boolean>;
   addLog: (log: WorkoutLog) => Promise<boolean>;
+  removeLog: (logId: string) => Promise<boolean>;
   batchUpdate: (updater: (prevState: AppState) => AppState) => Promise<boolean>;
   clearData: () => void;
 }
@@ -142,6 +143,14 @@ export function usePersistentStore(): UsePersistentStoreResult {
     }));
   }, [batchUpdate]);
 
+  // Helper to remove a log
+  const removeLog = useCallback(async (logId: string) => {
+    return batchUpdate(prev => ({
+      ...prev,
+      logs: prev.logs.filter(log => log.id !== logId),
+    }));
+  }, [batchUpdate]);
+
   const clearData = useCallback(() => {
     DataService.clear();
     setState(INITIAL_STATE);
@@ -154,6 +163,7 @@ export function usePersistentStore(): UsePersistentStoreResult {
     saveData,
     addExercise,
     addLog,
+    removeLog,
     batchUpdate,
     clearData,
   };

@@ -23,22 +23,16 @@ export interface SubSet {
   rpe?: number;
 }
 
-// Sub-entidad: Serie individual dentro de un log
-// Refactorizado para soportar Drop-sets y estados polimórficos
-export interface WorkoutSet {
-  subSets: SubSet[]; // Array de sub-series (drops)
-  isDropSet: boolean; // Si es falso, solo se procesa subSets[0]
-  isWarmup: boolean; // Si es verdadero, no alimenta al PredictiveLoadEngine
-  restTime?: number; // Rest time in seconds
-  type?: SetType; // Kept for backward compatibility or display logic, though isWarmup/isDropSet cover most logic
-}
-
 // Dinámico: Registro de un ejercicio en una sesión
 export interface WorkoutLog {
   id: string; // Unique ID for the log entry itself (e.g. UUID)
   timestamp: number;
   exerciseId: number; // Reference to ExerciseCatalog.id
-  sets: WorkoutSet[];
+  series: Array<{
+    weight: number;
+    reps: number;
+    rir: number;
+  }>;
 }
 
 // Estructura de pesos de transición: contextKey -> fromExerciseId -> toExerciseId -> weight

@@ -1,13 +1,13 @@
-import { type WorkoutLog, SetType } from '../types/models';
+import { type WorkoutLog } from '../types/models';
 
 /**
  * Calculates a load suggestion based on the last session's RPE and Fatigue status.
  * Logic:
  * - If isFatigued: Reduce weight by 10% (CNS Deload).
  * - Else (Standard):
- *   - RPE <= 7: Increase weight by ~2.5% OR add 1 rep. (We defaults to weight increase for now).
- *   - RPE >= 9: Maintain weight and reps.
- *   - RPE 8: Maintain (Sweet spot).
+ *   - RPE <= 7 (RIR >= 3): Increase weight by ~2.5% OR add 1 rep. (We defaults to weight increase for now).
+ *   - RPE >= 9 (RIR <= 1): Maintain weight and reps.
+ *   - RPE 8 (RIR 2): Maintain (Sweet spot).
  */
 export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number, isFatigued: boolean): string | null {
   // 1. Get logs for this exercise, sorted by date desc
@@ -18,51 +18,20 @@ export function calculateSuggestion(logs: WorkoutLog[], exerciseId: number, isFa
   if (exerciseLogs.length === 0) return null;
 
   const lastLog = exerciseLogs[0];
-  if (!lastLog.sets || lastLog.sets.length === 0) return null;
+  if (!lastLog.series || lastLog.series.length === 0) return null;
 
   // 2. Find the "Top Set" (Highest Weight, then Highest Reps)
-  // We exclude WARMUP sets from progression calculation to avoid biasing strength predictions.
-  // Using isWarmup flag or fallback to type.
-  const validSets = lastLog.sets.filter(s => {
-      if (s.isWarmup) return false;
-      if (s.type === SetType.WARMUP) return false;
-      return true;
-  });
-
-  if (validSets.length === 0) {
-    // Fallback if only warmup sets exist (rare but possible)
-    return null;
-  }
-
-  // Flatten sets into a comparable format for sorting.
-  // Using subSets[0] as the representative for the set, as per instruction "if isDropSet is false, only process the first element"
-  // Even if it is a drop set, the top weight is usually the first subset.
-  // Handles legacy data fallback.
-  const flatSets = validSets.map(s => {
-      // Safe access for legacy structure
-      if (!s.subSets || s.subSets.length === 0) {
-          const oldSet = s as unknown as { weight: number; reps: number; rpe?: number };
-          return {
-              weight: oldSet.weight,
-              reps: oldSet.reps,
-              rpe: oldSet.rpe
-          };
-      }
-      const first = s.subSets[0];
-      return {
-          weight: first.weight,
-          reps: first.reps,
-          rpe: first.rpe
-      };
-  });
-
-  // We assume the user wants to progress their top set.
-  const topSet = [...flatSets].sort((a, b) => {
+  // We rely on the new series model.
+  const topSet = [...lastLog.series].sort((a, b) => {
     if (a.weight !== b.weight) return b.weight - a.weight;
     return b.reps - a.reps;
   })[0];
 
-  const { weight, reps, rpe } = topSet;
+  const { weight, reps, rir } = topSet;
+
+  // Convert RIR to RPE for heuristic logic logic
+  // RPE = 10 - RIR (Approx)
+  const rpe = 10 - rir;
 
   // Priority check: Fatigue / CNS Deload
   if (isFatigued) {
