@@ -209,7 +209,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
   return (
     <AnimatePresence onExitComplete={() => { document.body.style.overflow = ''; }}>
       {isOpen && exercise && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
           {/* Backdrop - Event Insulation */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -229,7 +229,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
             }}
             transition={{ type: "spring", damping: 25, stiffness: 300, mass: 0.8 }}
             style={{ willChange: 'transform' }}
-            className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
+            className={`relative w-full max-w-lg bg-surface border-t rounded-t-2xl shadow-2xl p-6 pb-12 pointer-events-auto transition-all duration-300 ${getVisualMode()}`}
           >
             {isSuccess ? (
               <SuccessCheckmark />
