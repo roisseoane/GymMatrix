@@ -34,6 +34,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
   const [addedSeries, setAddedSeries] = useState<TempSet[]>([]);
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isAlreadyLogged, setIsAlreadyLogged] = useState(false);
 
   const currentRIR = RIR_OPTIONS.find(o => o.value === rirValue) || RIR_OPTIONS[3];
 
@@ -59,18 +60,34 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
       setBaseWeight(initialBase);
       setAddedSeries([]);
       setIsSuccess(false);
+      setIsAlreadyLogged(false);
 
-      if (lastLog && lastLog.series && lastLog.series.length > 0) {
-          // Smart Carry-over: pre-fill input with LAST set values
+      // Check if logged today
+      let isToday = false;
+      if (lastLog) {
+          const now = new Date();
+          const logDate = new Date(lastLog.timestamp);
+          isToday = now.getDate() === logDate.getDate() &&
+                    now.getMonth() === logDate.getMonth() &&
+                    now.getFullYear() === logDate.getFullYear();
+      }
+
+      if (isToday && lastLog && lastLog.series) {
+          // Already logged today: Show read-only view
+          setIsAlreadyLogged(true);
+          setAddedSeries(lastLog.series);
+          // Clear inputs
+          setCurrentWeight('');
+          setCurrentReps('');
+      } else if (lastLog && lastLog.series && lastLog.series.length > 0) {
+          // Previous log (not today): Smart Carry-over
           const lastSet = lastLog.series[lastLog.series.length - 1];
           const base = parseFloat(initialBase) || 0;
           const added = Math.max(0, lastSet.weight - base);
 
           setCurrentWeight(added.toString());
           setCurrentReps(lastSet.reps.toString());
-
-          // Map RPE/RIR back if needed, or stick to default
-          setRirValue(lastSet.rir); // Assuming simple mapping if rir stored directly
+          setRirValue(lastSet.rir);
       } else {
           // Default clear
           setCurrentWeight('');
@@ -87,7 +104,7 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
   };
 
   const handleAddSet = () => {
-    if (!isInputValid()) return;
+    if (!isInputValid() || isAlreadyLogged) return;
 
     const baseVal = parseFloat(baseWeight) || 0;
     const totalWeight = parseFloat(currentWeight) + baseVal;
@@ -97,14 +114,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
         reps: parseFloat(currentReps),
         rir: rirValue
     }]);
-
-    // Optional: Clear reps but keep weight? Or keep both for rapid entry?
-    // User often does same weight/reps. Let's keep values.
-    // If they want to change, they can.
   };
 
   const handleSaveLog = async () => {
-    if (addedSeries.length === 0 || !exercise) return;
+    if (addedSeries.length === 0 || !exercise || isAlreadyLogged) return;
 
     // Check if base weight changed and update exercise definition
     const baseVal = parseFloat(baseWeight) || 0;
@@ -217,7 +230,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
                                 value={currentWeight}
                                 onChange={e => setCurrentWeight(e.target.value)}
                                 placeholder="0"
-                                className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
+                                disabled={isAlreadyLogged}
+                                className={`w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5 ${isAlreadyLogged ? 'opacity-50 cursor-not-allowed' : ''}`}
                               />
                                {/* Plate Assistant */}
                                {parseFloat(currentWeight) > 0 && (
@@ -238,7 +252,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
                             value={currentReps}
                             onChange={e => setCurrentReps(e.target.value)}
                             placeholder="0"
-                            className="w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5"
+                            disabled={isAlreadyLogged}
+                            className={`w-full bg-background border border-white/10 rounded-xl p-3 text-2xl font-bold text-text text-center focus:border-primary focus:outline-none placeholder-white/5 ${isAlreadyLogged ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                         </div>
                       </div>
@@ -252,10 +267,10 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
         {/* Add Set Button */}
         <button
           onClick={handleAddSet}
-          disabled={!isInputValid()}
+          disabled={!isInputValid() || isAlreadyLogged}
           className={`
             w-full py-3 rounded-xl text-md font-bold tracking-wide uppercase transition-all mb-4
-            ${isInputValid()
+            ${isInputValid() && !isAlreadyLogged
               ? 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
               : 'bg-white/5 text-muted cursor-not-allowed border border-white/5'}
           `}
@@ -266,15 +281,15 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
         {/* Save Log Button */}
         <button
           onClick={handleSaveLog}
-          disabled={addedSeries.length === 0}
+          disabled={addedSeries.length === 0 || isAlreadyLogged}
           className={`
             w-full py-4 rounded-xl text-lg font-bold tracking-wide uppercase transition-all
-            ${addedSeries.length > 0
+            ${addedSeries.length > 0 && !isAlreadyLogged
               ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02]'
               : 'bg-white/5 text-white/20 cursor-not-allowed'}
           `}
         >
-          {t('save_log')}
+          {isAlreadyLogged ? (t('exercise_already_logged') || 'EXERCICI JA REGISTRAT') : t('save_log')}
         </button>
               </>
             )}
