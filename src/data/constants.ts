@@ -1,3 +1,13 @@
+import type { AppState } from '../types/models';
+
+export const INITIAL_STATE: AppState = {
+  exercises: {},
+  logs: [],
+  transitionMap: {},
+  activeNextSuggestion: [],
+  sessionMetadata: {},
+};
+
 export const RIR_OPTIONS = [
   { value: 0, label: 'Fallo total', color: '#ef4444', glow: 'shadow-red-500/50', rpe: 10 },
   { value: 1, label: 'Casi fallo', color: '#f97316', glow: 'shadow-orange-500/50', rpe: 9.5 },

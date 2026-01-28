@@ -16,6 +16,7 @@ interface LogEntryModalProps {
 }
 
 interface TempSet {
+  id: string;
   weight: number;
   reps: number;
   rir: number;
@@ -75,7 +76,8 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
       if (isToday && lastLog && lastLog.series) {
           // Already logged today: Show read-only view
           setIsAlreadyLogged(true);
-          setAddedSeries(lastLog.series);
+          // Add temporary IDs to existing series for rendering consistency
+          setAddedSeries(lastLog.series.map(s => ({ ...s, id: crypto.randomUUID() })));
           // Clear inputs
           setCurrentWeight('');
           setCurrentReps('');
@@ -110,10 +112,29 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
     const totalWeight = parseFloat(currentWeight) + baseVal;
 
     setAddedSeries(prev => [...prev, {
+        id: crypto.randomUUID(),
         weight: totalWeight,
         reps: parseFloat(currentReps),
         rir: rirValue
     }]);
+
+    // Clear inputs after adding to prepare for next set
+    setCurrentWeight('');
+    setCurrentReps('');
+    setRirValue(3); // Reset RIR to default
+  };
+
+  const handleRemoveSet = (id: string) => {
+    setAddedSeries(prev => prev.filter(s => s.id !== id));
+  };
+
+  const handleUpdateSet = (id: string, field: keyof TempSet, value: number) => {
+    setAddedSeries(prev => prev.map(s => {
+      if (s.id === id) {
+        return { ...s, [field]: value };
+      }
+      return s;
+    }));
   };
 
   const handleSaveLog = async () => {
@@ -125,11 +146,18 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
         await onUpdateExercise({ ...exercise, baseWeight: baseVal });
     }
 
+    // Strip IDs before saving to match WorkoutLog model
+    const cleanSeries = addedSeries.map(s => ({
+      weight: s.weight,
+      reps: s.reps,
+      rir: s.rir
+    }));
+
     const log: WorkoutLog = {
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       exerciseId: exercise.id,
-      series: addedSeries
+      series: cleanSeries
     };
 
     await onSave(log);
@@ -193,13 +221,60 @@ export function LogEntryModal({ isOpen, onClose, exercise, lastLog, onSave, onUp
                 {addedSeries.length > 0 && (
                     <div className="mb-6 space-y-2">
                         {addedSeries.map((s, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-white/5 rounded-lg p-3 border border-white/10">
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-text font-bold text-lg">Set {idx + 1}</span>
-                                    <span className="text-muted text-sm">{s.weight}kg x {s.reps}</span>
+                            <div key={s.id} className="flex justify-between items-center bg-white/5 rounded-lg p-3 border border-white/10 gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-text font-bold text-sm w-12 shrink-0">Set {idx + 1}</span>
+
+                                    {/* Controlled Weight Input */}
+                                    <div className="relative w-16">
+                                        <input
+                                            type="number"
+                                            value={s.weight}
+                                            disabled={isAlreadyLogged}
+                                            onChange={(e) => handleUpdateSet(s.id, 'weight', parseFloat(e.target.value))}
+                                            className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-center text-text font-bold text-sm focus:outline-none focus:border-primary"
+                                        />
+                                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-muted pointer-events-none">kg</span>
+                                    </div>
+
+                                    <span className="text-muted text-xs">x</span>
+
+                                    {/* Controlled Reps Input */}
+                                    <div className="relative w-14">
+                                        <input
+                                            type="number"
+                                            value={s.reps}
+                                            disabled={isAlreadyLogged}
+                                            onChange={(e) => handleUpdateSet(s.id, 'reps', parseFloat(e.target.value))}
+                                            className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-center text-text font-bold text-sm focus:outline-none focus:border-primary"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="text-xs font-bold px-2 py-1 rounded bg-white/10 text-muted">
-                                    RIR {s.rir}
+
+                                <div className="flex items-center gap-2">
+                                    {/* RIR Display/Edit - simplified as small input */}
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] text-muted uppercase font-bold">RIR</span>
+                                        <input
+                                            type="number"
+                                            value={s.rir}
+                                            disabled={isAlreadyLogged}
+                                            onChange={(e) => handleUpdateSet(s.id, 'rir', parseFloat(e.target.value))}
+                                            className="w-10 bg-white/5 border border-white/10 rounded px-1 py-1 text-center text-xs text-muted font-bold focus:outline-none focus:border-primary"
+                                        />
+                                    </div>
+
+                                    {/* Delete Button */}
+                                    {!isAlreadyLogged && (
+                                        <button
+                                            onClick={() => handleRemoveSet(s.id)}
+                                            className="p-2 rounded-full hover:bg-red-500/20 text-muted hover:text-red-500 transition-colors ml-1"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

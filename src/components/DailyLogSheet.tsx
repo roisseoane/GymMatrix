@@ -44,9 +44,7 @@ export function DailyLogSheet({ isOpen, onClose, date }: DailyLogSheetProps) {
 
   // Format date key as local date string YYYY-MM-DD
   const dateKey = useMemo(() => {
-    const offset = targetDate.getTimezoneOffset();
-    const localDate = new Date(targetDate.getTime() - (offset * 60 * 1000));
-    return localDate.toISOString().split('T')[0];
+    return targetDate.toLocaleDateString('sv-SE');
   }, [targetDate]);
 
   const todaysLogs = useMemo(() => {
