@@ -56,7 +56,7 @@ export class DataService {
       // will be present (from INITIAL_STATE) even if missing in old storage.
       return {
           ...INITIAL_STATE,
-          ...data,
+          ...(data as Partial<AppState>),
           // Deep merge or specific sanitization could happen here if needed,
           // but top-level spread covers the "new property added" case.
       };
