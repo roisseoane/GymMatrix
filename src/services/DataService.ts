@@ -1,5 +1,6 @@
 import LZString from 'lz-string';
 import type { AppState } from '../types/models';
+import { INITIAL_STATE } from '../data/constants';
 
 const STORAGE_KEY = 'workout_app_v1';
 
@@ -19,11 +20,46 @@ export class DataService {
         return null;
       }
 
-      return JSON.parse(decompressed) as AppState;
+      const parsed = JSON.parse(decompressed);
+
+      // Migration Guard: Validate Schema
+      if (!this.validateSchema(parsed)) {
+          console.error('DataService: Invalid schema detected. Resetting to safe state.');
+          return null;
+      }
+
+      // Migration Guard: Sanitize Data (Fill missing fields)
+      return this.sanitizeData(parsed);
+
     } catch (error) {
       console.error('DataService: Error loading data', error);
       return null;
     }
+  }
+
+  /**
+   * Validates that the loaded object has the minimum required structure.
+   */
+  private static validateSchema(data: unknown): boolean {
+      if (!data || typeof data !== 'object') return false;
+      // Critical fields must exist
+      return 'exercises' in data && 'logs' in data;
+  }
+
+  /**
+   * Ensures the loaded data has all properties expected by the current AppState version.
+   * Fills missing properties with defaults from INITIAL_STATE.
+   */
+  private static sanitizeData(data: unknown): AppState {
+      // Create a new object starting with defaults, then overwrite with loaded data
+      // This ensures any new top-level properties added to AppState in the future
+      // will be present (from INITIAL_STATE) even if missing in old storage.
+      return {
+          ...INITIAL_STATE,
+          ...data,
+          // Deep merge or specific sanitization could happen here if needed,
+          // but top-level spread covers the "new property added" case.
+      };
   }
 
   /**

@@ -2,14 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DataService } from '../services/DataService';
 import type { AppState, ExerciseCatalog, WorkoutLog } from '../types/models';
 import { INITIAL_EXERCISES } from '../data/initialExercises';
-
-const INITIAL_STATE: AppState = {
-  exercises: {},
-  logs: [],
-  transitionMap: {},
-  activeNextSuggestion: [],
-  sessionMetadata: {},
-};
+import { INITIAL_STATE } from '../data/constants';
 
 interface UsePersistentStoreResult {
   state: AppState;
