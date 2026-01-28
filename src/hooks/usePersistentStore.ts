@@ -47,12 +47,32 @@ export function usePersistentStore(): UsePersistentStoreResult {
         let finalState: AppState;
 
         if (loadedData) {
-          // 3a. If data exists, merge it but FORCE overwrite the exercises catalog
-          // This keeps logs, stats, settings, etc., but updates the definitions to the new structure
+          // 3a. If data exists, implement SMART MERGE of exercises
+          // Goal: Update static definitions (name, tags) from catalog, but PRESERVE user customizations (baseWeight)
+          const mergedExercises = { ...loadedData.exercises };
+
+          INITIAL_EXERCISES.forEach(catalogEx => {
+            const existing = mergedExercises[catalogEx.id];
+            if (existing) {
+              // Update static fields, keep dynamic ones
+              mergedExercises[catalogEx.id] = {
+                ...existing,
+                name: catalogEx.name,
+                muscleGroup: catalogEx.muscleGroup,
+                equipment: catalogEx.equipment,
+                tags: catalogEx.tags,
+                // baseWeight comes from 'existing', so we don't overwrite it
+              };
+            } else {
+              // New exercise in catalog
+              mergedExercises[catalogEx.id] = catalogEx;
+            }
+          });
+
           finalState = {
             ...INITIAL_STATE,
             ...loadedData,
-            exercises: currentExerciseMap
+            exercises: mergedExercises
           };
         } else {
           // 3b. If no data, initialize fresh with the current exercises
